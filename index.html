@@ -14,6 +14,7 @@
   --accent:#0c6670; --accent-ink:#ffffff;
   --pending:#2b5aa6; --pending-bg:#e3ecf8;
   --hold:#a45f00; --hold-bg:#fbebd0;
+  --paid:#1c7a40; --paid-bg:#dcf1e4;
   --danger:#b3261e;
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -24,6 +25,7 @@
     --accent:#3fb3bf; --accent-ink:#06191c;
     --pending:#8db4f0; --pending-bg:#1d3252;
     --hold:#f0b45a; --hold-bg:#473213;
+    --paid:#7fd9a0; --paid-bg:#17402a;
     --danger:#ff8a80;
   }
 }
@@ -61,10 +63,17 @@ input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-rad
 .btn.small{padding:5px 10px;min-height:32px;font-size:13px}
 .btn.danger{color:var(--danger)}
 
-.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.sup-add{display:flex;gap:8px;flex-wrap:wrap;align-items:end;max-width:520px}
+.sup-add > div{flex:1 1 220px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 12px;border:1px solid var(--line);border-radius:99px;font-size:14px}
+.chip button{border:0;background:transparent;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;width:24px;height:24px;border-radius:50%}
+.chip button:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
 .stat .k{font-size:13px;color:var(--muted)}
-.stat .v{font-family:var(--mono);font-size:20px;font-weight:500;margin-top:2px}
+.stat .v{font-family:var(--mono);font-size:19px;font-weight:500;margin-top:2px}
 
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
 table{width:100%;border-collapse:collapse;min-width:760px}
@@ -75,14 +84,16 @@ td.num,th.num{text-align:right}
 td.mono{font-family:var(--mono)}
 td.supplier{white-space:normal;min-width:160px}
 tr:hover td{background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
-td select{width:auto;min-height:32px;padding:4px 8px;font-size:13px}
+tr.paid-row td.mono,tr.paid-row td.supplier{color:var(--muted)}
+td select{width:auto;min-height:32px;padding:4px 8px;font-size:13px;font-weight:500}
 td select.Pending{background:var(--pending-bg);color:var(--pending)}
 td select.Hold{background:var(--hold-bg);color:var(--hold)}
+td select.Paid{background:var(--paid-bg);color:var(--paid)}
 .empty{padding:28px;text-align:center;color:var(--muted)}
 .note{font-size:13px;color:var(--muted);margin:10px 0 0}
 .warn{color:var(--hold);font-size:13px;min-height:18px;margin-top:6px}
 .banner{background:var(--hold-bg);color:var(--hold);padding:10px 14px;border-radius:4px;font-size:14px;margin-bottom:14px}
-.banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger)}
+.banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger);margin-bottom:0}
 
 dialog{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:22px;max-width:380px;width:calc(100% - 32px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
@@ -134,6 +145,7 @@ dialog .field{margin-bottom:12px}
   <main>
     <div class="banner error hidden" id="appErr" role="alert"></div>
 
+    <!-- add / edit cheque -->
     <section class="card">
       <h2 id="formTitle">Add cheque</h2>
       <form id="chequeForm">
@@ -141,10 +153,10 @@ dialog .field{margin-bottom:12px}
           <div><label for="fDate">Cheque date</label><input type="date" id="fDate" required></div>
           <div><label for="fNo">Cheque number</label><input id="fNo" inputmode="numeric" autocomplete="off" required></div>
           <div><label for="fAmt">Amount (Rs.)</label><input id="fAmt" type="number" step="0.01" min="0" inputmode="decimal" required></div>
-          <div><label for="fSup">Supplier</label><input id="fSup" autocomplete="off" required></div>
+          <div><label for="fSup">Supplier</label><select id="fSup" required></select></div>
           <div>
             <label for="fStatus">Status</label>
-            <select id="fStatus"><option>Pending</option><option>Hold</option></select>
+            <select id="fStatus"><option>Pending</option><option>Hold</option><option>Paid</option></select>
           </div>
           <div class="row-btns">
             <button class="btn primary" type="submit" id="btnSave">Add cheque</button>
@@ -155,17 +167,31 @@ dialog .field{margin-bottom:12px}
       </form>
     </section>
 
+    <!-- suppliers -->
+    <section class="card">
+      <h2>Suppliers</h2>
+      <form id="supForm" class="sup-add">
+        <div><label for="sName">New supplier name</label><input id="sName" autocomplete="off" required></div>
+        <button class="btn primary" type="submit" id="btnAddSup">Add supplier</button>
+      </form>
+      <div class="warn" id="supMsg" role="status"></div>
+      <div class="chips" id="supList"></div>
+      <p class="note">Suppliers you add appear in the Supplier dropdown above. Deleting a supplier does not delete its cheques.</p>
+    </section>
+
+    <!-- filters -->
     <section class="card">
       <h2>Filter</h2>
       <div class="grid">
         <div><label for="flMonth">Month</label><input type="month" id="flMonth"></div>
         <div><label for="flFrom">From date</label><input type="date" id="flFrom"></div>
         <div><label for="flTo">To date</label><input type="date" id="flTo"></div>
+        <div><label for="flSup">Supplier</label><select id="flSup"></select></div>
         <div>
           <label for="flStatus">Status</label>
-          <select id="flStatus"><option value="">All</option><option>Pending</option><option>Hold</option></select>
+          <select id="flStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option></select>
         </div>
-        <div><label for="flSearch">Supplier or cheque no.</label><input id="flSearch" placeholder="Search" autocomplete="off"></div>
+        <div><label for="flSearch">Cheque no. search</label><input id="flSearch" placeholder="Search" autocomplete="off"></div>
         <div class="row-btns">
           <button class="btn primary" id="btnFilter" type="button">Apply filter</button>
           <button class="btn" id="btnClear" type="button">Clear</button>
@@ -194,7 +220,7 @@ dialog .field{margin-bottom:12px}
         </table>
         <div class="empty hidden" id="empty"></div>
       </div>
-      <p class="note">Click a column heading to sort. All data is stored in your Supabase database.</p>
+      <p class="note">Click a column heading to sort. When a cheque has passed, change its status to Paid. All data is stored in your Supabase database.</p>
     </section>
   </main>
 </div>
@@ -216,17 +242,13 @@ dialog .field{margin-bottom:12px}
 (function(){
   "use strict";
 
-  /* =====================================================
-     1. PASTE YOUR SUPABASE DETAILS HERE
-        Supabase dashboard > Project Settings > API
-        - Project URL
-        - anon public key  (safe to keep in this file)
-     ===================================================== */
+  /* ===== Supabase connection ===== */
   const SUPABASE_URL      = "https://twaseumqutyenzkigqtk.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_o7wmsLyi2YtA7TdqXtlgFQ_8ggqVLgQ";
-  /* ===================================================== */
+  /* =============================== */
 
   const $ = id => document.getElementById(id);
+  const STATUSES = ["Pending","Hold","Paid"];
   const configured = /^https:\/\/.+\.supabase\.co/.test(SUPABASE_URL) && !SUPABASE_ANON_KEY.startsWith("PASTE");
   const libReady = !!(window.supabase && window.supabase.createClient);
 
@@ -234,7 +256,7 @@ dialog .field{margin-bottom:12px}
     const b = $("cfgBanner");
     b.textContent = !libReady
       ? "Could not load the Supabase library. Check your internet connection and reload."
-      : "Setup needed: open index.html and paste your Supabase Project URL and anon key at the top of the script.";
+      : "Setup needed: open index.html and paste your Supabase Project URL and key at the top of the script.";
     b.classList.remove("hidden");
     $("btnLogin").disabled = true;
     return;
@@ -244,9 +266,10 @@ dialog .field{margin-bottom:12px}
 
   /* ---------- state ---------- */
   let cheques = [];
+  let suppliers = [];   // [{id, name}]
   let editId = null;
   let sortKey = "date", sortDir = -1;
-  let filt = { month:"", from:"", to:"", status:"", q:"" };
+  let filt = { month:"", from:"", to:"", supplier:"", status:"", q:"" };
   let loading = false;
 
   const money = n => Number(n).toLocaleString("en-LK",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -273,7 +296,7 @@ dialog .field{margin-bottom:12px}
     $("appView").classList.add("hidden");
     $("loginView").classList.remove("hidden");
     $("lp").value = "";
-    cheques = [];
+    cheques = []; suppliers = [];
   }
 
   $("loginForm").addEventListener("submit", async e => {
@@ -305,15 +328,75 @@ dialog .field{margin-bottom:12px}
     alert("Password updated.");
   });
 
-  /* ---------- load data (pages of 1000 until done) ---------- */
+  /* ---------- suppliers ---------- */
+  async function loadSuppliers(){
+    const { data, error } = await sb.from("suppliers").select("id,name").order("name");
+    if (error) {
+      showError("Could not load suppliers: " + error.message + ". Run supabase-update.sql in the Supabase SQL Editor.");
+      suppliers = [];
+    } else suppliers = data;
+    renderSuppliers();
+  }
+
+  function renderSuppliers(){
+    $("supList").innerHTML = suppliers.length
+      ? suppliers.map(s => `<span class="chip">${esc(s.name)}<button type="button" data-supdel="${s.id}" aria-label="Delete supplier ${esc(s.name)}">&times;</button></span>`).join("")
+      : `<span class="note" style="margin:0">No suppliers yet. Add your first supplier above.</span>`;
+    fillSupplierSelects();
+  }
+
+  function fillSupplierSelects(extraName){
+    const cur = $("fSup").value, curFilter = $("flSup").value;
+    const names = suppliers.map(s => s.name);
+    if (extraName && !names.includes(extraName)) names.push(extraName); // supplier on an old cheque
+    $("fSup").innerHTML = `<option value="">${names.length ? "Select supplier" : "Add a supplier first"}</option>` +
+      names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    if (cur && names.includes(cur)) $("fSup").value = cur;
+    // filter list: suppliers + any name used on existing cheques
+    const used = Array.from(new Set(cheques.map(c => c.supplier))).filter(n => !suppliers.some(s => s.name === n));
+    const all = suppliers.map(s => s.name).concat(used).sort((a,b) => a.localeCompare(b));
+    $("flSup").innerHTML = `<option value="">All suppliers</option>` + all.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    if (curFilter && all.includes(curFilter)) $("flSup").value = curFilter;
+  }
+
+  $("supForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("sName").value.trim().replace(/\s+/g," ");
+    if (!name) return;
+    $("supMsg").textContent = "";
+    $("btnAddSup").disabled = true;
+    const { error } = await sb.from("suppliers").insert({ name });
+    $("btnAddSup").disabled = false;
+    if (error) {
+      $("supMsg").textContent = error.code === "23505" ? "This supplier already exists." : "Could not add supplier: " + error.message;
+      return;
+    }
+    $("sName").value = "";
+    await loadSuppliers();
+    $("fSup").value = name; // ready to use in the cheque form
+  });
+
+  $("supList").addEventListener("click", async e => {
+    const b = e.target.closest("[data-supdel]"); if (!b) return;
+    const s = suppliers.find(x => x.id === b.dataset.supdel); if (!s) return;
+    const n = cheques.filter(c => c.supplier === s.name).length;
+    const msg = "Delete supplier \"" + s.name + "\"?" + (n ? "\n\nIts " + n + " existing cheque(s) will stay in the register." : "");
+    if (!confirm(msg)) return;
+    const { error } = await sb.from("suppliers").delete().eq("id", s.id);
+    if (error) { showError("Could not delete supplier: " + error.message); return; }
+    await loadSuppliers();
+  });
+
+  /* ---------- load data ---------- */
   async function loadAll(){
     loading = true; showError(""); render();
+    await loadSuppliers();
     let all = [], from = 0; const step = 1000;
     while (true) {
       const { data, error } = await sb.from("cheques").select("*")
         .order("cheque_date", { ascending:false }).order("id").range(from, from + step - 1);
       if (error) {
-        showError("Could not load cheques: " + error.message + ". Check that you ran the setup SQL in Supabase.");
+        showError("Could not load cheques: " + error.message);
         break;
       }
       all = all.concat(data);
@@ -321,13 +404,17 @@ dialog .field{margin-bottom:12px}
       from += step;
     }
     cheques = all.map(fromRow);
-    loading = false; render();
+    loading = false;
+    fillSupplierSelects();
+    render();
   }
 
-  /* ---------- add / edit ---------- */
+  /* ---------- add / edit cheque ---------- */
   function resetForm(){
     editId = null;
     $("chequeForm").reset();
+    fillSupplierSelects();
+    $("fSup").value = "";
     $("fDate").value = today();
     $("formTitle").textContent = "Add cheque";
     $("btnSave").textContent = "Add cheque";
@@ -348,10 +435,13 @@ dialog .field{margin-bottom:12px}
       date: $("fDate").value,
       number: $("fNo").value.trim(),
       amount: parseFloat($("fAmt").value),
-      supplier: $("fSup").value.trim(),
+      supplier: $("fSup").value,
       status: $("fStatus").value
     };
-    if (!rec.date || !rec.number || isNaN(rec.amount) || !rec.supplier) return;
+    if (!rec.date || !rec.number || isNaN(rec.amount) || !rec.supplier) {
+      showError("Choose a supplier. Add one in the Suppliers section if the list is empty.");
+      return;
+    }
     const dup = cheques.some(c => c.number === rec.number && c.id !== editId);
     if (dup && !confirm("Cheque number " + rec.number + " already exists. Save anyway?")) return;
 
@@ -367,6 +457,7 @@ dialog .field{margin-bottom:12px}
   function startEdit(id){
     const c = cheques.find(x => x.id === id); if (!c) return;
     editId = id;
+    fillSupplierSelects(c.supplier);
     $("fDate").value = c.date; $("fNo").value = c.number; $("fAmt").value = c.amount;
     $("fSup").value = c.supplier; $("fStatus").value = c.status;
     $("formTitle").textContent = "Edit cheque";
@@ -383,14 +474,14 @@ dialog .field{margin-bottom:12px}
   function readFilter(){
     filt = {
       month: $("flMonth").value, from: $("flFrom").value, to: $("flTo").value,
-      status: $("flStatus").value, q: $("flSearch").value.trim().toLowerCase()
+      supplier: $("flSup").value, status: $("flStatus").value, q: $("flSearch").value.trim().toLowerCase()
     };
   }
   $("btnFilter").addEventListener("click", () => { readFilter(); render(); });
   $("flSearch").addEventListener("keydown", e => { if (e.key === "Enter"){ readFilter(); render(); } });
   $("btnClear").addEventListener("click", () => {
     ["flMonth","flFrom","flTo","flSearch"].forEach(i => $(i).value = "");
-    $("flStatus").value = ""; readFilter(); render();
+    $("flSup").value = ""; $("flStatus").value = ""; readFilter(); render();
   });
 
   function filtered(){
@@ -398,8 +489,9 @@ dialog .field{margin-bottom:12px}
       if (filt.month && c.date.slice(0,7) !== filt.month) return false;
       if (filt.from && c.date < filt.from) return false;
       if (filt.to && c.date > filt.to) return false;
+      if (filt.supplier && c.supplier !== filt.supplier) return false;
       if (filt.status && c.status !== filt.status) return false;
-      if (filt.q && !(c.supplier.toLowerCase().includes(filt.q) || c.number.toLowerCase().includes(filt.q))) return false;
+      if (filt.q && !c.number.toLowerCase().includes(filt.q)) return false;
       return true;
     });
   }
@@ -424,14 +516,14 @@ dialog .field{margin-bottom:12px}
   function render(){
     const list = sorted(filtered());
     const sum = a => a.reduce((s,c) => s + c.amount, 0);
-    const pend = list.filter(c => c.status === "Pending");
-    const hold = list.filter(c => c.status === "Hold");
+    const by = s => list.filter(c => c.status === s);
 
     $("summary").innerHTML =
       stat("Cheques shown", list.length) +
-      stat("Total amount (Rs.)", money(sum(list))) +
-      stat("Pending (Rs.)", money(sum(pend)) + " · " + pend.length) +
-      stat("Hold (Rs.)", money(sum(hold)) + " · " + hold.length);
+      stat("Total (Rs.)", money(sum(list))) +
+      stat("Pending (Rs.)", money(sum(by("Pending"))) + " · " + by("Pending").length) +
+      stat("Hold (Rs.)", money(sum(by("Hold"))) + " · " + by("Hold").length) +
+      stat("Paid (Rs.)", money(sum(by("Paid"))) + " · " + by("Paid").length);
 
     const empty = $("empty");
     if (loading) { empty.textContent = "Loading cheques…"; empty.classList.remove("hidden"); }
@@ -441,15 +533,14 @@ dialog .field{margin-bottom:12px}
     } else empty.classList.add("hidden");
 
     $("rows").innerHTML = loading ? "" : list.map(c => `
-      <tr>
+      <tr class="${c.status === "Paid" ? "paid-row" : ""}">
         <td class="mono">${esc(c.date)}</td>
         <td class="mono">${esc(c.number)}</td>
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
         <td>
           <select class="${c.status}" data-status="${c.id}" aria-label="Status for cheque ${esc(c.number)}">
-            <option${c.status==="Pending"?" selected":""}>Pending</option>
-            <option${c.status==="Hold"?" selected":""}>Hold</option>
+            ${STATUSES.map(s => `<option${c.status===s?" selected":""}>${s}</option>`).join("")}
           </select>
         </td>
         <td style="text-align:right">
@@ -508,14 +599,22 @@ dialog .field{margin-bottom:12px}
           throw new Error("bad");
         const key = c => [c.date, String(c.number), String(c.supplier).toLowerCase(), Number(c.amount).toFixed(2)].join("|");
         const have = new Set(cheques.map(key));
-        const fresh = data.filter(c => !have.has(key(c))).map(c => toRow({
+        const fresh = data.filter(c => !have.has(key(c))).map(c => ({
           date:String(c.date), number:String(c.number), amount:Number(c.amount),
-          supplier:String(c.supplier), status: c.status === "Hold" ? "Hold" : "Pending"
+          supplier:String(c.supplier).trim(), status: STATUSES.includes(c.status) ? c.status : "Pending"
         }));
         if (!fresh.length) { alert("Nothing new to import. All cheques in this file already exist."); return; }
         if (!confirm("Add " + fresh.length + " new cheques from this file? Existing cheques are kept.")) return;
-        for (let i = 0; i < fresh.length; i += 500) {
-          const { error } = await sb.from("cheques").insert(fresh.slice(i, i + 500));
+
+        // make sure every supplier in the file exists in the supplier list
+        const known = new Set(suppliers.map(s => s.name.toLowerCase()));
+        const newSup = [];
+        fresh.forEach(c => { const k = c.supplier.toLowerCase(); if (c.supplier && !known.has(k)) { known.add(k); newSup.push({ name:c.supplier }); } });
+        if (newSup.length) await sb.from("suppliers").insert(newSup);
+
+        const rows = fresh.map(toRow);
+        for (let i = 0; i < rows.length; i += 500) {
+          const { error } = await sb.from("cheques").insert(rows.slice(i, i + 500));
           if (error) { showError("Import stopped: " + error.message); break; }
         }
         loadAll();

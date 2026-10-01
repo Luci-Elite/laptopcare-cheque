@@ -13,9 +13,11 @@
   --bg:#e9eef0; --panel:#ffffff; --ink:#13242c; --muted:#5b6b73; --line:#d3dce0;
   --accent:#0c6670; --accent-ink:#ffffff;
   --pending:#2b5aa6; --pending-bg:#e3ecf8;
-  --hold:#a45f00; --hold-bg:#fbebd0;
+  --hold:#a3221a; --hold-bg:#f5c6c2; --hold-row:#fdeceb;
   --paid:#1c7a40; --paid-bg:#dcf1e4;
+  --warn:#a45f00; --warn-bg:#fbebd0;
   --danger:#b3261e;
+  --alert-bg:#c62828; --alert-ink:#ffffff;
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
@@ -24,9 +26,11 @@
     --bg:#0f1a1f; --panel:#17262d; --ink:#e6eef1; --muted:#97a9b1; --line:#2a3d46;
     --accent:#3fb3bf; --accent-ink:#06191c;
     --pending:#8db4f0; --pending-bg:#1d3252;
-    --hold:#f0b45a; --hold-bg:#473213;
+    --hold:#ffa39b; --hold-bg:#6b2a28; --hold-row:#3a1f20;
     --paid:#7fd9a0; --paid-bg:#17402a;
+    --warn:#f0b45a; --warn-bg:#473213;
     --danger:#ff8a80;
+    --alert-bg:#a52121; --alert-ink:#ffffff;
   }
 }
 *{box-sizing:border-box}
@@ -49,6 +53,18 @@ button,input,select{font:inherit;color:inherit}
 main{max-width:1180px;margin:0 auto;padding:20px 24px 48px;display:grid;gap:18px}
 section.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
 section.card h2{margin:0 0 14px;font-size:16px;font-weight:600}
+
+/* ---------- tomorrow alert ---------- */
+.tomorrow{border-radius:6px;overflow:hidden}
+.tomorrow.due{background:var(--alert-bg);color:var(--alert-ink);padding:16px 18px}
+.tomorrow.due h2{margin:0;font-size:17px;font-weight:600}
+.tomorrow.due .sub{opacity:.9;font-size:14px;margin:2px 0 12px}
+.tomorrow .list{display:grid;gap:6px}
+.tomorrow .item{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:rgba(255,255,255,.14);padding:8px 12px;border-radius:4px}
+.tomorrow .item .no{font-family:var(--mono);font-weight:500}
+.tomorrow .item .amt{font-family:var(--mono);font-weight:500}
+.tomorrow .item .tag{font-size:12px;font-weight:600;background:#fff;color:var(--alert-bg);padding:1px 8px;border-radius:99px;margin-left:8px}
+.tomorrow.none{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:12px 16px;font-size:14px}
 
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel);min-height:40px}
@@ -75,24 +91,41 @@ input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-rad
 .stat .k{font-size:13px;color:var(--muted)}
 .stat .v{font-family:var(--mono);font-size:19px;font-weight:500;margin-top:2px}
 
+.lists{display:grid;gap:18px}
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
-table{width:100%;border-collapse:collapse;min-width:760px}
+table{width:100%;border-collapse:collapse;min-width:700px}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-th{font-size:13px;font-weight:600;color:var(--muted);background:color-mix(in srgb,var(--bg) 60%,var(--panel));cursor:pointer;user-select:none}
+th{font-size:13px;font-weight:600;color:var(--muted);background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
 tbody tr:last-child td{border-bottom:0}
 td.num,th.num{text-align:right}
 td.mono{font-family:var(--mono)}
 td.supplier{white-space:normal;min-width:160px}
 tr:hover td{background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
-tr.paid-row td.mono,tr.paid-row td.supplier{color:var(--muted)}
+
+/* date group header */
+tr.date-row td{background:color-mix(in srgb,var(--bg) 85%,var(--panel));padding:8px 12px;font-weight:600;border-bottom:1px solid var(--line)}
+tr.date-row:hover td{background:color-mix(in srgb,var(--bg) 85%,var(--panel))}
+tr.date-row .in{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+tr.date-row .meta{font-weight:400;color:var(--muted);font-size:13px}
+tr.date-row.today td{background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
+tr.date-row.tomorrow-row td{background:var(--alert-bg);color:var(--alert-ink)}
+tr.date-row.tomorrow-row:hover td{background:var(--alert-bg)}
+tr.date-row.tomorrow-row .meta{color:var(--alert-ink);opacity:.9}
+
+/* row states */
+tr.row-Hold td{background:var(--hold-row)}
+tr.row-Hold:hover td{background:color-mix(in srgb,var(--hold-bg) 55%,var(--hold-row))}
+tr.row-Paid td.mono,tr.row-Paid td.supplier{color:var(--muted)}
+tr.tom td:first-child{box-shadow:inset 4px 0 0 var(--alert-bg)}
+
 td select{width:auto;min-height:32px;padding:4px 8px;font-size:13px;font-weight:500}
 td select.Pending{background:var(--pending-bg);color:var(--pending)}
 td select.Hold{background:var(--hold-bg);color:var(--hold)}
 td select.Paid{background:var(--paid-bg);color:var(--paid)}
-.empty{padding:28px;text-align:center;color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:4px}
 .note{font-size:13px;color:var(--muted);margin:10px 0 0}
-.warn{color:var(--hold);font-size:13px;min-height:18px;margin-top:6px}
-.banner{background:var(--hold-bg);color:var(--hold);padding:10px 14px;border-radius:4px;font-size:14px;margin-bottom:14px}
+.warn{color:var(--warn);font-size:13px;min-height:18px;margin-top:6px}
+.banner{background:var(--warn-bg);color:var(--warn);padding:10px 14px;border-radius:4px;font-size:14px;margin-bottom:14px}
 .banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger);margin-bottom:0}
 
 dialog{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:22px;max-width:380px;width:calc(100% - 32px)}
@@ -144,6 +177,9 @@ dialog .field{margin-bottom:12px}
 
   <main>
     <div class="banner error hidden" id="appErr" role="alert"></div>
+
+    <!-- tomorrow's cheques -->
+    <div id="tomorrowBox" class="tomorrow none" role="status"></div>
 
     <!-- add / edit cheque -->
     <section class="card">
@@ -202,26 +238,19 @@ dialog .field{margin-bottom:12px}
 
     <div class="summary" id="summary"></div>
 
-    <section class="card">
-      <h2>Cheques</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th data-sort="date">Date</th>
-              <th data-sort="number">Cheque no.</th>
-              <th data-sort="supplier">Supplier</th>
-              <th data-sort="amount" class="num">Amount (Rs.)</th>
-              <th data-sort="status">Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
-        <div class="empty hidden" id="empty"></div>
-      </div>
-      <p class="note">Click a column heading to sort. When a cheque has passed, change its status to Paid. All data is stored in your Supabase database.</p>
-    </section>
+    <div class="lists" id="lists">
+      <section class="card">
+        <h2>Cheque details</h2>
+        <div id="unpaidBox"></div>
+        <p class="note">Grouped by date, earliest first. Hold cheques show in light red. When a cheque has passed, set its status to Paid and it moves to the Paid cheques list below.</p>
+      </section>
+
+      <section class="card">
+        <h2>Paid cheques</h2>
+        <div id="paidBox"></div>
+        <p class="note">Grouped by date, latest first.</p>
+      </section>
+    </div>
   </main>
 </div>
 
@@ -268,13 +297,22 @@ dialog .field{margin-bottom:12px}
   let cheques = [];
   let suppliers = [];   // [{id, name}]
   let editId = null;
-  let sortKey = "date", sortDir = -1;
   let filt = { month:"", from:"", to:"", supplier:"", status:"", q:"" };
   let loading = false;
 
   const money = n => Number(n).toLocaleString("en-LK",{minimumFractionDigits:2,maximumFractionDigits:2});
   const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const today = () => new Date().toISOString().slice(0,10);
+
+  /* dates use the device's local time, not UTC */
+  const ymd = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  const today = () => ymd(new Date());
+  const tomorrow = () => { const d = new Date(); d.setDate(d.getDate() + 1); return ymd(d); };
+  function dayLabel(s){
+    const [y,m,d] = s.split("-").map(Number);
+    const wd = new Date(y, m-1, d).toLocaleDateString("en-GB", { weekday:"long" });
+    const tag = s === today() ? "  (Today)" : s === tomorrow() ? "  (Tomorrow)" : "";
+    return s + "  " + wd + tag;
+  }
 
   function showError(msg){
     const el = $("appErr");
@@ -348,11 +386,10 @@ dialog .field{margin-bottom:12px}
   function fillSupplierSelects(extraName){
     const cur = $("fSup").value, curFilter = $("flSup").value;
     const names = suppliers.map(s => s.name);
-    if (extraName && !names.includes(extraName)) names.push(extraName); // supplier on an old cheque
+    if (extraName && !names.includes(extraName)) names.push(extraName);
     $("fSup").innerHTML = `<option value="">${names.length ? "Select supplier" : "Add a supplier first"}</option>` +
       names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
     if (cur && names.includes(cur)) $("fSup").value = cur;
-    // filter list: suppliers + any name used on existing cheques
     const used = Array.from(new Set(cheques.map(c => c.supplier))).filter(n => !suppliers.some(s => s.name === n));
     const all = suppliers.map(s => s.name).concat(used).sort((a,b) => a.localeCompare(b));
     $("flSup").innerHTML = `<option value="">All suppliers</option>` + all.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
@@ -373,7 +410,7 @@ dialog .field{margin-bottom:12px}
     }
     $("sName").value = "";
     await loadSuppliers();
-    $("fSup").value = name; // ready to use in the cheque form
+    $("fSup").value = name;
   });
 
   $("supList").addEventListener("click", async e => {
@@ -395,10 +432,7 @@ dialog .field{margin-bottom:12px}
     while (true) {
       const { data, error } = await sb.from("cheques").select("*")
         .order("cheque_date", { ascending:false }).order("id").range(from, from + step - 1);
-      if (error) {
-        showError("Could not load cheques: " + error.message);
-        break;
-      }
+      if (error) { showError("Could not load cheques: " + error.message); break; }
       all = all.concat(data);
       if (data.length < step) break;
       from += step;
@@ -496,45 +530,17 @@ dialog .field{margin-bottom:12px}
     });
   }
 
-  /* ---------- sort ---------- */
-  document.querySelectorAll("th[data-sort]").forEach(th => th.addEventListener("click", () => {
-    const k = th.dataset.sort;
-    if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = 1; }
-    render();
-  }));
-  function sorted(list){
-    return list.slice().sort((a,b) => {
-      const x = a[sortKey], y = b[sortKey];
-      if (sortKey === "amount") return (x - y) * sortDir;
-      if (sortKey === "number") { const nx = Number(x), ny = Number(y); if (!isNaN(nx) && !isNaN(ny)) return (nx-ny)*sortDir; }
-      return String(x).localeCompare(String(y)) * sortDir;
-    });
-  }
-
   /* ---------- render ---------- */
-  function stat(k,v){ return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
-  function render(){
-    const list = sorted(filtered());
-    const sum = a => a.reduce((s,c) => s + c.amount, 0);
-    const by = s => list.filter(c => c.status === s);
+  const numCmp = (a,b) => {
+    const x = Number(a.number), y = Number(b.number);
+    return (!isNaN(x) && !isNaN(y)) ? x - y : String(a.number).localeCompare(String(b.number));
+  };
+  const sum = a => a.reduce((s,c) => s + c.amount, 0);
+  const THEAD = `<thead><tr><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th>Status</th><th></th></tr></thead>`;
 
-    $("summary").innerHTML =
-      stat("Cheques shown", list.length) +
-      stat("Total (Rs.)", money(sum(list))) +
-      stat("Pending (Rs.)", money(sum(by("Pending"))) + " · " + by("Pending").length) +
-      stat("Hold (Rs.)", money(sum(by("Hold"))) + " · " + by("Hold").length) +
-      stat("Paid (Rs.)", money(sum(by("Paid"))) + " · " + by("Paid").length);
-
-    const empty = $("empty");
-    if (loading) { empty.textContent = "Loading cheques…"; empty.classList.remove("hidden"); }
-    else if (!list.length) {
-      empty.textContent = cheques.length ? "No cheques match this filter." : "No cheques yet. Add the first one above.";
-      empty.classList.remove("hidden");
-    } else empty.classList.add("hidden");
-
-    $("rows").innerHTML = loading ? "" : list.map(c => `
-      <tr class="${c.status === "Paid" ? "paid-row" : ""}">
-        <td class="mono">${esc(c.date)}</td>
+  function rowHTML(c, isTom){
+    return `
+      <tr class="row-${c.status}${isTom ? " tom" : ""}">
         <td class="mono">${esc(c.number)}</td>
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
@@ -547,10 +553,78 @@ dialog .field{margin-bottom:12px}
           <button class="btn small" data-edit="${c.id}">Edit</button>
           <button class="btn small danger" data-del="${c.id}">Delete</button>
         </td>
-      </tr>`).join("");
+      </tr>`;
   }
 
-  $("rows").addEventListener("click", async e => {
+  /* group cheques by date; dir 1 = earliest first, -1 = latest first */
+  function groupedTable(list, dir, highlightDays){
+    const dates = Array.from(new Set(list.map(c => c.date))).sort();
+    if (dir < 0) dates.reverse();
+    const tm = tomorrow(), td = today();
+    const body = dates.map(dt => {
+      const items = list.filter(c => c.date === dt).sort(numCmp);
+      const isTom = highlightDays && dt === tm;
+      const cls = highlightDays ? (isTom ? " tomorrow-row" : dt === td ? " today" : "") : "";
+      return `<tr class="date-row${cls}"><td colspan="5"><div class="in"><span>${esc(dayLabel(dt))}</span><span class="meta">${items.length} cheque${items.length===1?"":"s"}  ·  Rs. ${money(sum(items))}</span></div></td></tr>` +
+             items.map(c => rowHTML(c, isTom)).join("");
+    }).join("");
+    return `<div class="table-wrap"><table>${THEAD}<tbody>${body}</tbody></table></div>`;
+  }
+
+  function stat(k,v){ return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+
+  function renderTomorrow(){
+    const tm = tomorrow();
+    const due = cheques.filter(c => c.date === tm && c.status !== "Paid").sort(numCmp);
+    const box = $("tomorrowBox");
+    if (loading) { box.className = "tomorrow none"; box.textContent = "Checking tomorrow's cheques…"; return; }
+    if (!due.length) {
+      box.className = "tomorrow none";
+      box.textContent = "No cheques due tomorrow (" + tm + ").";
+      return;
+    }
+    box.className = "tomorrow due";
+    box.innerHTML = `
+      <h2>Tomorrow: ${due.length} cheque${due.length===1?"":"s"} to pay, Rs. ${money(sum(due))}</h2>
+      <div class="sub">${esc(dayLabel(tm))}</div>
+      <div class="list">${due.map(c => `
+        <div class="item">
+          <span><span class="no">${esc(c.number)}</span>  ${esc(c.supplier)}${c.status === "Hold" ? '<span class="tag">HOLD</span>' : ""}</span>
+          <span class="amt">Rs. ${money(c.amount)}</span>
+        </div>`).join("")}
+      </div>`;
+  }
+
+  function render(){
+    renderTomorrow();
+    const list = filtered();
+    const unpaid = list.filter(c => c.status !== "Paid");
+    const paid = list.filter(c => c.status === "Paid");
+    const by = s => list.filter(c => c.status === s);
+
+    $("summary").innerHTML =
+      stat("Cheques shown", list.length) +
+      stat("Total (Rs.)", money(sum(list))) +
+      stat("Pending (Rs.)", money(sum(by("Pending"))) + " · " + by("Pending").length) +
+      stat("Hold (Rs.)", money(sum(by("Hold"))) + " · " + by("Hold").length) +
+      stat("Paid (Rs.)", money(sum(paid)) + " · " + paid.length);
+
+    const msg = t => `<div class="empty">${t}</div>`;
+    if (loading) {
+      $("unpaidBox").innerHTML = msg("Loading cheques…");
+      $("paidBox").innerHTML = msg("Loading cheques…");
+      return;
+    }
+    $("unpaidBox").innerHTML = unpaid.length
+      ? groupedTable(unpaid, 1, true)
+      : msg(cheques.length ? "No unpaid cheques match this filter." : "No cheques yet. Add the first one above.");
+    $("paidBox").innerHTML = paid.length
+      ? groupedTable(paid, -1, false)
+      : msg("No paid cheques to show.");
+  }
+
+  /* ---------- row actions ---------- */
+  $("lists").addEventListener("click", async e => {
     const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]");
     if (ed) startEdit(ed.dataset.edit);
     if (del) {
@@ -562,7 +636,7 @@ dialog .field{margin-bottom:12px}
       }
     }
   });
-  $("rows").addEventListener("change", async e => {
+  $("lists").addEventListener("change", async e => {
     const s = e.target.closest("[data-status]"); if (!s) return;
     const c = cheques.find(x => x.id === s.dataset.status); if (!c) return;
     const old = c.status; c.status = s.value; render();
@@ -578,7 +652,7 @@ dialog .field{margin-bottom:12px}
     setTimeout(() => URL.revokeObjectURL(a.href), 500);
   }
   $("btnExport").addEventListener("click", () => {
-    const list = sorted(filtered());
+    const list = filtered().sort((a,b) => a.date.localeCompare(b.date) || numCmp(a,b));
     const q = v => '"' + String(v).replace(/"/g,'""') + '"';
     const csv = ["Date,Cheque No,Supplier,Amount,Status"]
       .concat(list.map(c => [c.date, q(c.number), q(c.supplier), c.amount.toFixed(2), c.status].join(","))).join("\n");
@@ -606,7 +680,6 @@ dialog .field{margin-bottom:12px}
         if (!fresh.length) { alert("Nothing new to import. All cheques in this file already exist."); return; }
         if (!confirm("Add " + fresh.length + " new cheques from this file? Existing cheques are kept.")) return;
 
-        // make sure every supplier in the file exists in the supplier list
         const known = new Set(suppliers.map(s => s.name.toLowerCase()));
         const newSup = [];
         fresh.forEach(c => { const k = c.supplier.toLowerCase(); if (c.supplier && !known.has(k)) { known.add(k); newSup.push({ name:c.supplier }); } });
@@ -623,6 +696,10 @@ dialog .field{margin-bottom:12px}
     };
     r.readAsText(f);
   });
+
+  /* refresh the "tomorrow" box when the day changes while the page stays open */
+  let lastDay = today();
+  setInterval(() => { if (today() !== lastDay) { lastDay = today(); render(); } }, 60000);
 })();
 </script>
 </body>

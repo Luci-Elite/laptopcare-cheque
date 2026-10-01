@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cheque Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#e9eef0; --panel:#ffffff; --ink:#13242c; --muted:#5b6b73; --line:#d3dce0;
+  --accent:#0c6670; --accent-ink:#ffffff;
+  --pending:#2b5aa6; --pending-bg:#e3ecf8;
+  --hold:#a45f00; --hold-bg:#fbebd0;
+  --danger:#b3261e;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1a1f; --panel:#17262d; --ink:#e6eef1; --muted:#97a9b1; --line:#2a3d46;
+    --accent:#3fb3bf; --accent-ink:#06191c;
+    --pending:#8db4f0; --pending-bg:#1d3252;
+    --hold:#f0b45a; --hold-bg:#473213;
+    --danger:#ff8a80;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hidden{display:none !important}
+
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:32px 28px}
+.login h1{margin:0 0 4px;font-size:22px;font-weight:600}
+.login p{margin:0 0 22px;color:var(--muted)}
+.login .err{color:var(--danger);min-height:20px;margin:8px 0 0;font-size:14px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.top h1{margin:0;font-size:18px;font-weight:600}
+.top .who{font-size:13px;color:var(--muted)}
+.top .actions{display:flex;gap:8px;flex-wrap:wrap}
+main{max-width:1180px;margin:0 auto;padding:20px 24px 48px;display:grid;gap:18px}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
+section.card h2{margin:0 0 14px;font-size:16px;font-weight:600}
+
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel);min-height:40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{border:1px solid var(--line);background:var(--panel);padding:9px 14px;border-radius:4px;cursor:pointer;min-height:40px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:wait}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:5px 10px;min-height:32px;font-size:13px}
+.btn.danger{color:var(--danger)}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.stat .k{font-size:13px;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:20px;font-weight:500;margin-top:2px}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:13px;font-weight:600;color:var(--muted);background:color-mix(in srgb,var(--bg) 60%,var(--panel));cursor:pointer;user-select:none}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+td.mono{font-family:var(--mono)}
+td.supplier{white-space:normal;min-width:160px}
+tr:hover td{background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
+td select{width:auto;min-height:32px;padding:4px 8px;font-size:13px}
+td select.Pending{background:var(--pending-bg);color:var(--pending)}
+td select.Hold{background:var(--hold-bg);color:var(--hold)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);margin:10px 0 0}
+.warn{color:var(--hold);font-size:13px;min-height:18px;margin-top:6px}
+.banner{background:var(--hold-bg);color:var(--hold);padding:10px 14px;border-radius:4px;font-size:14px;margin-bottom:14px}
+.banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger)}
+
+dialog{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:22px;max-width:380px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin:0 0 14px;font-size:17px}
+dialog .field{margin-bottom:12px}
+
+@media (max-width:600px){ .top{padding:12px 14px} main{padding:14px 12px 40px} }
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginView" class="login-wrap">
+  <form class="login" id="loginForm" autocomplete="on">
+    <h1>Cheque Register</h1>
+    <p>Sign in to view and manage cheque details.</p>
+    <div class="banner hidden" id="cfgBanner"></div>
+    <div style="margin-bottom:12px">
+      <label for="lu">Email</label>
+      <input id="lu" name="email" type="email" autocomplete="username" required>
+    </div>
+    <div style="margin-bottom:6px">
+      <label for="lp">Password</label>
+      <input id="lp" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="err" id="loginErr" role="alert"></div>
+    <button class="btn primary" style="width:100%;margin-top:10px" type="submit" id="btnLogin">Sign in</button>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appView" class="hidden">
+  <header class="top">
+    <div>
+      <h1>Cheque Register</h1>
+      <div class="who" id="who"></div>
+    </div>
+    <div class="actions">
+      <button class="btn small" id="btnExport">Export CSV</button>
+      <button class="btn small" id="btnBackup">Backup</button>
+      <button class="btn small" id="btnImport">Import</button>
+      <button class="btn small" id="btnSettings">Change password</button>
+      <button class="btn small" id="btnLogout">Sign out</button>
+      <input type="file" id="fileImport" accept=".json,application/json" class="hidden">
+    </div>
+  </header>
+
+  <main>
+    <div class="banner error hidden" id="appErr" role="alert"></div>
+
+    <section class="card">
+      <h2 id="formTitle">Add cheque</h2>
+      <form id="chequeForm">
+        <div class="grid">
+          <div><label for="fDate">Cheque date</label><input type="date" id="fDate" required></div>
+          <div><label for="fNo">Cheque number</label><input id="fNo" inputmode="numeric" autocomplete="off" required></div>
+          <div><label for="fAmt">Amount (Rs.)</label><input id="fAmt" type="number" step="0.01" min="0" inputmode="decimal" required></div>
+          <div><label for="fSup">Supplier</label><input id="fSup" autocomplete="off" required></div>
+          <div>
+            <label for="fStatus">Status</label>
+            <select id="fStatus"><option>Pending</option><option>Hold</option></select>
+          </div>
+          <div class="row-btns">
+            <button class="btn primary" type="submit" id="btnSave">Add cheque</button>
+            <button class="btn hidden" type="button" id="btnCancel">Cancel</button>
+          </div>
+        </div>
+        <div class="warn" id="dupWarn" role="status"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Filter</h2>
+      <div class="grid">
+        <div><label for="flMonth">Month</label><input type="month" id="flMonth"></div>
+        <div><label for="flFrom">From date</label><input type="date" id="flFrom"></div>
+        <div><label for="flTo">To date</label><input type="date" id="flTo"></div>
+        <div>
+          <label for="flStatus">Status</label>
+          <select id="flStatus"><option value="">All</option><option>Pending</option><option>Hold</option></select>
+        </div>
+        <div><label for="flSearch">Supplier or cheque no.</label><input id="flSearch" placeholder="Search" autocomplete="off"></div>
+        <div class="row-btns">
+          <button class="btn primary" id="btnFilter" type="button">Apply filter</button>
+          <button class="btn" id="btnClear" type="button">Clear</button>
+        </div>
+      </div>
+      <p class="note">Pick a month, or a date range. Choosing one clears the other.</p>
+    </section>
+
+    <div class="summary" id="summary"></div>
+
+    <section class="card">
+      <h2>Cheques</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="date">Date</th>
+              <th data-sort="number">Cheque no.</th>
+              <th data-sort="supplier">Supplier</th>
+              <th data-sort="amount" class="num">Amount (Rs.)</th>
+              <th data-sort="status">Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty hidden" id="empty"></div>
+      </div>
+      <p class="note">Click a column heading to sort. All data is stored in your Supabase database.</p>
+    </section>
+  </main>
+</div>
+
+<!-- change password dialog -->
+<dialog id="dlgSettings">
+  <form method="dialog" id="settingsForm">
+    <h2>Change password</h2>
+    <div class="field"><label for="sPass">New password</label><input id="sPass" type="password" minlength="6" required autocomplete="new-password"></div>
+    <div class="warn" id="sMsg"></div>
+    <div class="row-btns" style="margin-top:10px">
+      <button class="btn primary" type="submit" id="sSave">Save password</button>
+      <button class="btn" type="button" id="sCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =====================================================
+     1. PASTE YOUR SUPABASE DETAILS HERE
+        Supabase dashboard > Project Settings > API
+        - Project URL
+        - anon public key  (safe to keep in this file)
+     ===================================================== */
+  const SUPABASE_URL      = "https://twaseumqutyenzkigqtk.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_o7wmsLyi2YtA7TdqXtlgFQ_8ggqVLgQ";
+  /* ===================================================== */
+
+  const $ = id => document.getElementById(id);
+  const configured = /^https:\/\/.+\.supabase\.co/.test(SUPABASE_URL) && !SUPABASE_ANON_KEY.startsWith("PASTE");
+  const libReady = !!(window.supabase && window.supabase.createClient);
+
+  if (!configured || !libReady) {
+    const b = $("cfgBanner");
+    b.textContent = !libReady
+      ? "Could not load the Supabase library. Check your internet connection and reload."
+      : "Setup needed: open index.html and paste your Supabase Project URL and anon key at the top of the script.";
+    b.classList.remove("hidden");
+    $("btnLogin").disabled = true;
+    return;
+  }
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ---------- state ---------- */
+  let cheques = [];
+  let editId = null;
+  let sortKey = "date", sortDir = -1;
+  let filt = { month:"", from:"", to:"", status:"", q:"" };
+  let loading = false;
+
+  const money = n => Number(n).toLocaleString("en-LK",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const today = () => new Date().toISOString().slice(0,10);
+
+  function showError(msg){
+    const el = $("appErr");
+    el.textContent = msg || "";
+    el.classList.toggle("hidden", !msg);
+  }
+  const fromRow = r => ({ id:r.id, date:r.cheque_date, number:r.cheque_number, amount:Number(r.amount), supplier:r.supplier, status:r.status });
+  const toRow   = c => ({ cheque_date:c.date, cheque_number:c.number, amount:c.amount, supplier:c.supplier, status:c.status });
+
+  /* ---------- auth ---------- */
+  function showApp(user){
+    $("loginView").classList.add("hidden");
+    $("appView").classList.remove("hidden");
+    $("who").textContent = user && user.email ? "Signed in as " + user.email : "";
+    $("fDate").value = today();
+    loadAll();
+  }
+  function showLogin(){
+    $("appView").classList.add("hidden");
+    $("loginView").classList.remove("hidden");
+    $("lp").value = "";
+    cheques = [];
+  }
+
+  $("loginForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    $("loginErr").textContent = "";
+    $("btnLogin").disabled = true;
+    const { data, error } = await sb.auth.signInWithPassword({ email: $("lu").value.trim(), password: $("lp").value });
+    $("btnLogin").disabled = false;
+    if (error) { $("loginErr").textContent = "Wrong email or password."; return; }
+    showApp(data.user);
+  });
+  $("btnLogout").addEventListener("click", async () => { await sb.auth.signOut(); showLogin(); });
+
+  sb.auth.getSession().then(({ data }) => { if (data && data.session) showApp(data.session.user); });
+  sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_OUT") showLogin(); });
+
+  /* ---------- change password ---------- */
+  $("btnSettings").addEventListener("click", () => { $("sMsg").textContent=""; $("settingsForm").reset(); $("dlgSettings").showModal(); });
+  $("sCancel").addEventListener("click", () => $("dlgSettings").close());
+  $("settingsForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const p = $("sPass").value;
+    if (p.length < 6) { $("sMsg").textContent = "Use at least 6 characters."; return; }
+    $("sSave").disabled = true;
+    const { error } = await sb.auth.updateUser({ password: p });
+    $("sSave").disabled = false;
+    if (error) { $("sMsg").textContent = error.message; return; }
+    $("dlgSettings").close();
+    alert("Password updated.");
+  });
+
+  /* ---------- load data (pages of 1000 until done) ---------- */
+  async function loadAll(){
+    loading = true; showError(""); render();
+    let all = [], from = 0; const step = 1000;
+    while (true) {
+      const { data, error } = await sb.from("cheques").select("*")
+        .order("cheque_date", { ascending:false }).order("id").range(from, from + step - 1);
+      if (error) {
+        showError("Could not load cheques: " + error.message + ". Check that you ran the setup SQL in Supabase.");
+        break;
+      }
+      all = all.concat(data);
+      if (data.length < step) break;
+      from += step;
+    }
+    cheques = all.map(fromRow);
+    loading = false; render();
+  }
+
+  /* ---------- add / edit ---------- */
+  function resetForm(){
+    editId = null;
+    $("chequeForm").reset();
+    $("fDate").value = today();
+    $("formTitle").textContent = "Add cheque";
+    $("btnSave").textContent = "Add cheque";
+    $("btnCancel").classList.add("hidden");
+    $("dupWarn").textContent = "";
+  }
+  $("btnCancel").addEventListener("click", resetForm);
+
+  $("fNo").addEventListener("input", () => {
+    const n = $("fNo").value.trim();
+    const dup = n && cheques.some(c => c.number === n && c.id !== editId);
+    $("dupWarn").textContent = dup ? "This cheque number is already in the register." : "";
+  });
+
+  $("chequeForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const rec = {
+      date: $("fDate").value,
+      number: $("fNo").value.trim(),
+      amount: parseFloat($("fAmt").value),
+      supplier: $("fSup").value.trim(),
+      status: $("fStatus").value
+    };
+    if (!rec.date || !rec.number || isNaN(rec.amount) || !rec.supplier) return;
+    const dup = cheques.some(c => c.number === rec.number && c.id !== editId);
+    if (dup && !confirm("Cheque number " + rec.number + " already exists. Save anyway?")) return;
+
+    $("btnSave").disabled = true; showError("");
+    let error;
+    if (editId) ({ error } = await sb.from("cheques").update(toRow(rec)).eq("id", editId));
+    else        ({ error } = await sb.from("cheques").insert(toRow(rec)));
+    $("btnSave").disabled = false;
+    if (error) { showError("Could not save: " + error.message); return; }
+    resetForm(); loadAll();
+  });
+
+  function startEdit(id){
+    const c = cheques.find(x => x.id === id); if (!c) return;
+    editId = id;
+    $("fDate").value = c.date; $("fNo").value = c.number; $("fAmt").value = c.amount;
+    $("fSup").value = c.supplier; $("fStatus").value = c.status;
+    $("formTitle").textContent = "Edit cheque";
+    $("btnSave").textContent = "Save changes";
+    $("btnCancel").classList.remove("hidden");
+    window.scrollTo({ top:0, behavior:"smooth" });
+  }
+
+  /* ---------- filters ---------- */
+  $("flMonth").addEventListener("input", () => { if ($("flMonth").value){ $("flFrom").value=""; $("flTo").value=""; } });
+  $("flFrom").addEventListener("input", () => { if ($("flFrom").value) $("flMonth").value=""; });
+  $("flTo").addEventListener("input",   () => { if ($("flTo").value)   $("flMonth").value=""; });
+
+  function readFilter(){
+    filt = {
+      month: $("flMonth").value, from: $("flFrom").value, to: $("flTo").value,
+      status: $("flStatus").value, q: $("flSearch").value.trim().toLowerCase()
+    };
+  }
+  $("btnFilter").addEventListener("click", () => { readFilter(); render(); });
+  $("flSearch").addEventListener("keydown", e => { if (e.key === "Enter"){ readFilter(); render(); } });
+  $("btnClear").addEventListener("click", () => {
+    ["flMonth","flFrom","flTo","flSearch"].forEach(i => $(i).value = "");
+    $("flStatus").value = ""; readFilter(); render();
+  });
+
+  function filtered(){
+    return cheques.filter(c => {
+      if (filt.month && c.date.slice(0,7) !== filt.month) return false;
+      if (filt.from && c.date < filt.from) return false;
+      if (filt.to && c.date > filt.to) return false;
+      if (filt.status && c.status !== filt.status) return false;
+      if (filt.q && !(c.supplier.toLowerCase().includes(filt.q) || c.number.toLowerCase().includes(filt.q))) return false;
+      return true;
+    });
+  }
+
+  /* ---------- sort ---------- */
+  document.querySelectorAll("th[data-sort]").forEach(th => th.addEventListener("click", () => {
+    const k = th.dataset.sort;
+    if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = 1; }
+    render();
+  }));
+  function sorted(list){
+    return list.slice().sort((a,b) => {
+      const x = a[sortKey], y = b[sortKey];
+      if (sortKey === "amount") return (x - y) * sortDir;
+      if (sortKey === "number") { const nx = Number(x), ny = Number(y); if (!isNaN(nx) && !isNaN(ny)) return (nx-ny)*sortDir; }
+      return String(x).localeCompare(String(y)) * sortDir;
+    });
+  }
+
+  /* ---------- render ---------- */
+  function stat(k,v){ return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+  function render(){
+    const list = sorted(filtered());
+    const sum = a => a.reduce((s,c) => s + c.amount, 0);
+    const pend = list.filter(c => c.status === "Pending");
+    const hold = list.filter(c => c.status === "Hold");
+
+    $("summary").innerHTML =
+      stat("Cheques shown", list.length) +
+      stat("Total amount (Rs.)", money(sum(list))) +
+      stat("Pending (Rs.)", money(sum(pend)) + " · " + pend.length) +
+      stat("Hold (Rs.)", money(sum(hold)) + " · " + hold.length);
+
+    const empty = $("empty");
+    if (loading) { empty.textContent = "Loading cheques…"; empty.classList.remove("hidden"); }
+    else if (!list.length) {
+      empty.textContent = cheques.length ? "No cheques match this filter." : "No cheques yet. Add the first one above.";
+      empty.classList.remove("hidden");
+    } else empty.classList.add("hidden");
+
+    $("rows").innerHTML = loading ? "" : list.map(c => `
+      <tr>
+        <td class="mono">${esc(c.date)}</td>
+        <td class="mono">${esc(c.number)}</td>
+        <td class="supplier">${esc(c.supplier)}</td>
+        <td class="num mono">${money(c.amount)}</td>
+        <td>
+          <select class="${c.status}" data-status="${c.id}" aria-label="Status for cheque ${esc(c.number)}">
+            <option${c.status==="Pending"?" selected":""}>Pending</option>
+            <option${c.status==="Hold"?" selected":""}>Hold</option>
+          </select>
+        </td>
+        <td style="text-align:right">
+          <button class="btn small" data-edit="${c.id}">Edit</button>
+          <button class="btn small danger" data-del="${c.id}">Delete</button>
+        </td>
+      </tr>`).join("");
+  }
+
+  $("rows").addEventListener("click", async e => {
+    const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]");
+    if (ed) startEdit(ed.dataset.edit);
+    if (del) {
+      const c = cheques.find(x => x.id === del.dataset.del);
+      if (c && confirm("Delete cheque " + c.number + " (" + c.supplier + ")?")) {
+        const { error } = await sb.from("cheques").delete().eq("id", c.id);
+        if (error) { showError("Could not delete: " + error.message); return; }
+        cheques = cheques.filter(x => x.id !== c.id); render();
+      }
+    }
+  });
+  $("rows").addEventListener("change", async e => {
+    const s = e.target.closest("[data-status]"); if (!s) return;
+    const c = cheques.find(x => x.id === s.dataset.status); if (!c) return;
+    const old = c.status; c.status = s.value; render();
+    const { error } = await sb.from("cheques").update({ status: c.status }).eq("id", c.id);
+    if (error) { c.status = old; showError("Could not update status: " + error.message); render(); }
+  });
+
+  /* ---------- export / backup / import ---------- */
+  function download(name, text, type){
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  }
+  $("btnExport").addEventListener("click", () => {
+    const list = sorted(filtered());
+    const q = v => '"' + String(v).replace(/"/g,'""') + '"';
+    const csv = ["Date,Cheque No,Supplier,Amount,Status"]
+      .concat(list.map(c => [c.date, q(c.number), q(c.supplier), c.amount.toFixed(2), c.status].join(","))).join("\n");
+    download("cheques-" + today() + ".csv", "\ufeff" + csv, "text/csv;charset=utf-8");
+  });
+  $("btnBackup").addEventListener("click", () =>
+    download("cheque-backup-" + today() + ".json",
+      JSON.stringify(cheques.map(({id, ...rest}) => rest), null, 2), "application/json"));
+
+  $("btnImport").addEventListener("click", () => $("fileImport").click());
+  $("fileImport").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = async () => {
+      try {
+        const data = JSON.parse(r.result);
+        if (!Array.isArray(data) || !data.every(c => c && c.date && c.number !== undefined && c.supplier !== undefined && !isNaN(c.amount)))
+          throw new Error("bad");
+        const key = c => [c.date, String(c.number), String(c.supplier).toLowerCase(), Number(c.amount).toFixed(2)].join("|");
+        const have = new Set(cheques.map(key));
+        const fresh = data.filter(c => !have.has(key(c))).map(c => toRow({
+          date:String(c.date), number:String(c.number), amount:Number(c.amount),
+          supplier:String(c.supplier), status: c.status === "Hold" ? "Hold" : "Pending"
+        }));
+        if (!fresh.length) { alert("Nothing new to import. All cheques in this file already exist."); return; }
+        if (!confirm("Add " + fresh.length + " new cheques from this file? Existing cheques are kept.")) return;
+        for (let i = 0; i < fresh.length; i += 500) {
+          const { error } = await sb.from("cheques").insert(fresh.slice(i, i + 500));
+          if (error) { showError("Import stopped: " + error.message); break; }
+        }
+        loadAll();
+      } catch(err){ alert("This file is not a valid cheque backup."); }
+      $("fileImport").value = "";
+    };
+    r.readAsText(f);
+  });
+})();
+</script>
+</body>
+</html>

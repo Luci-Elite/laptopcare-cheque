@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#e9eef0; --panel:#ffffff; --ink:#13242c; --muted:#5b6b73; --line:#d3dce0;
@@ -54,28 +55,28 @@ main{max-width:1180px;margin:0 auto;padding:20px 24px 48px;display:grid;gap:18px
 section.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
 section.card h2{margin:0 0 14px;font-size:16px;font-weight:600}
 
-/* ---------- tomorrow alert ---------- */
+/* tomorrow alert */
 .tomorrow{border-radius:6px;overflow:hidden}
 .tomorrow.due{background:var(--alert-bg);color:var(--alert-ink);padding:16px 18px}
 .tomorrow.due h2{margin:0;font-size:17px;font-weight:600}
 .tomorrow.due .sub{opacity:.9;font-size:14px;margin:2px 0 12px}
 .tomorrow .list{display:grid;gap:6px}
 .tomorrow .item{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:rgba(255,255,255,.14);padding:8px 12px;border-radius:4px}
-.tomorrow .item .no{font-family:var(--mono);font-weight:500}
-.tomorrow .item .amt{font-family:var(--mono);font-weight:500}
+.tomorrow .item .no,.tomorrow .item .amt{font-family:var(--mono);font-weight:500}
 .tomorrow .item .tag{font-size:12px;font-weight:600;background:#fff;color:var(--alert-bg);padding:1px 8px;border-radius:99px;margin-left:8px}
 .tomorrow.none{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:12px 16px;font-size:14px}
 
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel);min-height:40px}
+input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;accent-color:var(--accent);cursor:pointer;vertical-align:middle}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
 .row-btns{display:flex;gap:8px;flex-wrap:wrap}
 
 .btn{border:1px solid var(--line);background:var(--panel);padding:9px 14px;border-radius:4px;cursor:pointer;min-height:40px;font-weight:500}
 .btn:hover{border-color:var(--accent)}
-.btn:disabled{opacity:.55;cursor:wait}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.primary:hover{filter:brightness(1.08)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
 .btn.small{padding:5px 10px;min-height:32px;font-size:13px}
 .btn.danger{color:var(--danger)}
 
@@ -89,21 +90,29 @@ input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-rad
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
 .stat .k{font-size:13px;color:var(--muted)}
-.stat .v{font-family:var(--mono);font-size:19px;font-weight:500;margin-top:2px}
+.stat .v{font-family:var(--mono);font-size:18px;font-weight:500;margin-top:2px}
+.stat.key{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}
+
+/* bulk bar */
+.bulk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin:0;cursor:pointer}
+.bulk .info{color:var(--muted);font-size:14px;flex:1 1 auto}
 
 .lists{display:grid;gap:18px}
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
-table{width:100%;border-collapse:collapse;min-width:700px}
+table{width:100%;border-collapse:collapse;min-width:900px}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
 th{font-size:13px;font-weight:600;color:var(--muted);background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
 tbody tr:last-child td{border-bottom:0}
 td.num,th.num{text-align:right}
 td.mono{font-family:var(--mono)}
-td.supplier{white-space:normal;min-width:160px}
+td.supplier{white-space:normal;min-width:150px}
+td.bal{font-weight:600}
+td.chk-cell,th.chk-cell{width:40px;padding-right:0}
+.sub-note{display:block;font-size:12px;color:var(--muted);font-family:var(--sans)}
 tr:hover td{background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
 
-/* date group header */
-tr.date-row td{background:color-mix(in srgb,var(--bg) 85%,var(--panel));padding:8px 12px;font-weight:600;border-bottom:1px solid var(--line)}
+tr.date-row td{background:color-mix(in srgb,var(--bg) 85%,var(--panel));padding:8px 12px;font-weight:600}
 tr.date-row:hover td{background:color-mix(in srgb,var(--bg) 85%,var(--panel))}
 tr.date-row .in{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 tr.date-row .meta{font-weight:400;color:var(--muted);font-size:13px}
@@ -112,7 +121,6 @@ tr.date-row.tomorrow-row td{background:var(--alert-bg);color:var(--alert-ink)}
 tr.date-row.tomorrow-row:hover td{background:var(--alert-bg)}
 tr.date-row.tomorrow-row .meta{color:var(--alert-ink);opacity:.9}
 
-/* row states */
 tr.row-Hold td{background:var(--hold-row)}
 tr.row-Hold:hover td{background:color-mix(in srgb,var(--hold-bg) 55%,var(--hold-row))}
 tr.row-Paid td.mono,tr.row-Paid td.supplier{color:var(--muted)}
@@ -128,10 +136,13 @@ td select.Paid{background:var(--paid-bg);color:var(--paid)}
 .banner{background:var(--warn-bg);color:var(--warn);padding:10px 14px;border-radius:4px;font-size:14px;margin-bottom:14px}
 .banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger);margin-bottom:0}
 
-dialog{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:22px;max-width:380px;width:calc(100% - 32px)}
+dialog{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:22px;max-width:420px;width:calc(100% - 32px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 dialog h2{margin:0 0 14px;font-size:17px}
 dialog .field{margin-bottom:12px}
+.paybox{border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin-bottom:14px;font-size:14px;display:grid;gap:3px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
+.paybox .muted{color:var(--muted)}
+.paybox b{font-family:var(--mono);font-weight:500}
 
 @media (max-width:600px){ .top{padding:12px 14px} main{padding:14px 12px 40px} }
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
@@ -166,7 +177,7 @@ dialog .field{margin-bottom:12px}
       <div class="who" id="who"></div>
     </div>
     <div class="actions">
-      <button class="btn small" id="btnExport">Export CSV</button>
+      <button class="btn small" id="btnExport">Export to Excel</button>
       <button class="btn small" id="btnBackup">Backup</button>
       <button class="btn small" id="btnImport">Import</button>
       <button class="btn small" id="btnSettings">Change password</button>
@@ -178,7 +189,6 @@ dialog .field{margin-bottom:12px}
   <main>
     <div class="banner error hidden" id="appErr" role="alert"></div>
 
-    <!-- tomorrow's cheques -->
     <div id="tomorrowBox" class="tomorrow none" role="status"></div>
 
     <!-- add / edit cheque -->
@@ -192,7 +202,7 @@ dialog .field{margin-bottom:12px}
           <div><label for="fSup">Supplier</label><select id="fSup" required></select></div>
           <div>
             <label for="fStatus">Status</label>
-            <select id="fStatus"><option>Pending</option><option>Hold</option><option>Paid</option></select>
+            <select id="fStatus"><option>Pending</option><option>Hold</option></select>
           </div>
           <div class="row-btns">
             <button class="btn primary" type="submit" id="btnSave">Add cheque</button>
@@ -241,8 +251,13 @@ dialog .field{margin-bottom:12px}
     <div class="lists" id="lists">
       <section class="card">
         <h2>Cheque details</h2>
+        <div class="bulk">
+          <label class="chk"><input type="checkbox" id="selAll"> Select all shown</label>
+          <span class="info" id="selInfo">Tick cheques, or tick a date to select that whole day.</span>
+          <button class="btn primary small" id="btnBulkPay" type="button" disabled>Mark selected as Paid</button>
+        </div>
         <div id="unpaidBox"></div>
-        <p class="note">Grouped by date, earliest first. Hold cheques show in light red. When a cheque has passed, set its status to Paid and it moves to the Paid cheques list below.</p>
+        <p class="note">Grouped by date, earliest first. Hold cheques show in light red. Press Pay to record a cash or cheque payment. Fully paid cheques move to the Paid list below.</p>
       </section>
 
       <section class="card">
@@ -267,13 +282,55 @@ dialog .field{margin-bottom:12px}
   </form>
 </dialog>
 
+<!-- payment dialog -->
+<dialog id="dlgPay">
+  <form method="dialog" id="payForm">
+    <h2 id="payTitle">Pay cheque</h2>
+    <div class="paybox" id="payInfo"></div>
+    <div class="field">
+      <label for="payMethod">Paid by</label>
+      <select id="payMethod"><option value="Cheque">Cheque</option><option value="Cash">Cash</option></select>
+    </div>
+    <div class="field" id="payAmtField">
+      <label for="payAmt">Amount paid now (Rs.)</label>
+      <input id="payAmt" type="number" step="0.01" min="0.01" inputmode="decimal">
+    </div>
+    <div class="field"><label for="payDate">Payment date</label><input type="date" id="payDate"></div>
+    <div class="warn" id="payMsg" role="status"></div>
+    <div class="row-btns" style="margin-top:10px">
+      <button class="btn primary" type="submit" id="paySave">Save payment</button>
+      <button class="btn" type="button" id="payCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- export dialog -->
+<dialog id="dlgExport">
+  <form method="dialog" id="exportForm">
+    <h2>Export to Excel</h2>
+    <div class="field"><label for="exFrom">From date</label><input type="date" id="exFrom"></div>
+    <div class="field"><label for="exTo">To date</label><input type="date" id="exTo"></div>
+    <div class="field"><label for="exSup">Supplier</label><select id="exSup"></select></div>
+    <div class="field">
+      <label for="exStatus">Status</label>
+      <select id="exStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option></select>
+    </div>
+    <p class="note" style="margin-top:0">Leave the dates empty to export every date.</p>
+    <div class="warn" id="exCount" role="status"></div>
+    <div class="row-btns" style="margin-top:10px">
+      <button class="btn primary" type="submit" id="exSave">Download Excel file</button>
+      <button class="btn" type="button" id="exCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 (function(){
   "use strict";
 
   /* ===== Supabase connection ===== */
-  const SUPABASE_URL      = "https://twaseumqutyenzkigqtk.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_o7wmsLyi2YtA7TdqXtlgFQ_8ggqVLgQ";
+  const SUPABASE_URL      = "https://xppxtdnyuyfhviqkvwvj.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable__zE_KIYKRgOmVyD1LK4Swg_PY19bdW5";
   /* =============================== */
 
   const $ = id => document.getElementById(id);
@@ -295,15 +352,20 @@ dialog .field{margin-bottom:12px}
 
   /* ---------- state ---------- */
   let cheques = [];
-  let suppliers = [];   // [{id, name}]
+  let suppliers = [];
   let editId = null;
   let filt = { month:"", from:"", to:"", supplier:"", status:"", q:"" };
   let loading = false;
+  let selected = new Set();
+  let shownUnpaid = [];
+  let payIds = [], payBulk = false;
 
+  /* ---------- helpers ---------- */
   const money = n => Number(n).toLocaleString("en-LK",{minimumFractionDigits:2,maximumFractionDigits:2});
   const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const r2 = n => Math.round(n * 100) / 100;
+  const sum = a => r2(a.reduce((s,x) => s + x, 0));
 
-  /* dates use the device's local time, not UTC */
   const ymd = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
   const today = () => ymd(new Date());
   const tomorrow = () => { const d = new Date(); d.setDate(d.getDate() + 1); return ymd(d); };
@@ -314,13 +376,26 @@ dialog .field{margin-bottom:12px}
     return s + "  " + wd + tag;
   }
 
+  const paidOf = c => r2(c.cash + c.chq);
+  const balOf  = c => c.status === "Paid" ? 0 : Math.max(0, r2(c.amount - paidOf(c)));
+
+  const dbHint = m => /cash_paid|cheque_paid|paid_date/.test(m || "")
+    ? m + " (Run supabase-all-in-one.sql again in the Supabase SQL Editor to add the payment columns.)" : m;
   function showError(msg){
     const el = $("appErr");
-    el.textContent = msg || "";
+    el.textContent = msg ? dbHint(msg) : "";
     el.classList.toggle("hidden", !msg);
   }
-  const fromRow = r => ({ id:r.id, date:r.cheque_date, number:r.cheque_number, amount:Number(r.amount), supplier:r.supplier, status:r.status });
-  const toRow   = c => ({ cheque_date:c.date, cheque_number:c.number, amount:c.amount, supplier:c.supplier, status:c.status });
+
+  const fromRow = r => {
+    const amount = Number(r.amount);
+    const cash = Number(r.cash_paid || 0);
+    let chq = Number(r.cheque_paid || 0);
+    if (r.status === "Paid" && cash + chq === 0) chq = amount;   // older paid cheques with no payment details
+    return { id:r.id, date:r.cheque_date, number:r.cheque_number, amount, supplier:r.supplier,
+             status:r.status, cash, chq, paidDate:r.paid_date || "" };
+  };
+  const toRow = c => ({ cheque_date:c.date, cheque_number:c.number, amount:c.amount, supplier:c.supplier, status:c.status });
 
   /* ---------- auth ---------- */
   function showApp(user){
@@ -334,7 +409,7 @@ dialog .field{margin-bottom:12px}
     $("appView").classList.add("hidden");
     $("loginView").classList.remove("hidden");
     $("lp").value = "";
-    cheques = []; suppliers = [];
+    cheques = []; suppliers = []; selected.clear();
   }
 
   $("loginForm").addEventListener("submit", async e => {
@@ -370,7 +445,7 @@ dialog .field{margin-bottom:12px}
   async function loadSuppliers(){
     const { data, error } = await sb.from("suppliers").select("id,name").order("name");
     if (error) {
-      showError("Could not load suppliers: " + error.message + ". Run supabase-update.sql in the Supabase SQL Editor.");
+      showError("Could not load suppliers: " + error.message + ". Run supabase-all-in-one.sql in the Supabase SQL Editor.");
       suppliers = [];
     } else suppliers = data;
     renderSuppliers();
@@ -383,6 +458,11 @@ dialog .field{margin-bottom:12px}
     fillSupplierSelects();
   }
 
+  function allSupplierNames(){
+    const used = Array.from(new Set(cheques.map(c => c.supplier))).filter(n => !suppliers.some(s => s.name === n));
+    return suppliers.map(s => s.name).concat(used).sort((a,b) => a.localeCompare(b));
+  }
+
   function fillSupplierSelects(extraName){
     const cur = $("fSup").value, curFilter = $("flSup").value;
     const names = suppliers.map(s => s.name);
@@ -390,8 +470,7 @@ dialog .field{margin-bottom:12px}
     $("fSup").innerHTML = `<option value="">${names.length ? "Select supplier" : "Add a supplier first"}</option>` +
       names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
     if (cur && names.includes(cur)) $("fSup").value = cur;
-    const used = Array.from(new Set(cheques.map(c => c.supplier))).filter(n => !suppliers.some(s => s.name === n));
-    const all = suppliers.map(s => s.name).concat(used).sort((a,b) => a.localeCompare(b));
+    const all = allSupplierNames();
     $("flSup").innerHTML = `<option value="">All suppliers</option>` + all.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
     if (curFilter && all.includes(curFilter)) $("flSup").value = curFilter;
   }
@@ -444,9 +523,15 @@ dialog .field{margin-bottom:12px}
   }
 
   /* ---------- add / edit cheque ---------- */
+  function setFormStatus(isPaid){
+    const s = $("fStatus");
+    s.innerHTML = isPaid ? "<option>Paid</option>" : "<option>Pending</option><option>Hold</option>";
+    s.disabled = !!isPaid;
+  }
   function resetForm(){
     editId = null;
     $("chequeForm").reset();
+    setFormStatus(false);
     fillSupplierSelects();
     $("fSup").value = "";
     $("fDate").value = today();
@@ -479,6 +564,14 @@ dialog .field{margin-bottom:12px}
     const dup = cheques.some(c => c.number === rec.number && c.id !== editId);
     if (dup && !confirm("Cheque number " + rec.number + " already exists. Save anyway?")) return;
 
+    if (editId) {   // keep the status in line with what has already been paid
+      const old = cheques.find(c => c.id === editId);
+      if (old && paidOf(old) > 0) {
+        if (paidOf(old) >= rec.amount - 0.005) rec.status = "Paid";
+        else if (old.status === "Paid") rec.status = "Pending";
+      }
+    }
+
     $("btnSave").disabled = true; showError("");
     let error;
     if (editId) ({ error } = await sb.from("cheques").update(toRow(rec)).eq("id", editId));
@@ -492,6 +585,7 @@ dialog .field{margin-bottom:12px}
     const c = cheques.find(x => x.id === id); if (!c) return;
     editId = id;
     fillSupplierSelects(c.supplier);
+    setFormStatus(c.status === "Paid");
     $("fDate").value = c.date; $("fNo").value = c.number; $("fAmt").value = c.amount;
     $("fSup").value = c.supplier; $("fStatus").value = c.status;
     $("formTitle").textContent = "Edit cheque";
@@ -535,20 +629,45 @@ dialog .field{margin-bottom:12px}
     const x = Number(a.number), y = Number(b.number);
     return (!isNaN(x) && !isNaN(y)) ? x - y : String(a.number).localeCompare(String(b.number));
   };
-  const sum = a => a.reduce((s,c) => s + c.amount, 0);
-  const THEAD = `<thead><tr><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th>Status</th><th></th></tr></thead>`;
+  const THEAD_UNPAID = `<thead><tr><th class="chk-cell"></th><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th class="num">Paid (Rs.)</th><th class="num">Balance (Rs.)</th><th>Status</th><th></th></tr></thead>`;
+  const THEAD_PAID   = `<thead><tr><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th class="num">By cash (Rs.)</th><th class="num">By cheque (Rs.)</th><th>Paid on</th><th>Status</th><th></th></tr></thead>`;
 
-  function rowHTML(c, isTom){
+  const statusSelect = c => `
+    <select class="${c.status}" data-status="${c.id}" aria-label="Status for cheque ${esc(c.number)}">
+      ${STATUSES.map(s => `<option${c.status===s?" selected":""}>${s}</option>`).join("")}
+    </select>`;
+
+  function unpaidRow(c, isTom){
+    const paid = paidOf(c);
+    const parts = [];
+    if (c.cash) parts.push("Cash " + money(c.cash));
+    if (c.chq) parts.push("Cheque " + money(c.chq));
     return `
       <tr class="row-${c.status}${isTom ? " tom" : ""}">
+        <td class="chk-cell"><input type="checkbox" data-sel="${c.id}" ${selected.has(c.id) ? "checked" : ""} aria-label="Select cheque ${esc(c.number)}"></td>
         <td class="mono">${esc(c.number)}</td>
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
-        <td>
-          <select class="${c.status}" data-status="${c.id}" aria-label="Status for cheque ${esc(c.number)}">
-            ${STATUSES.map(s => `<option${c.status===s?" selected":""}>${s}</option>`).join("")}
-          </select>
+        <td class="num mono">${paid > 0 ? money(paid) + `<span class="sub-note">${parts.join(" · ")}</span>` : "–"}</td>
+        <td class="num mono bal">${money(balOf(c))}</td>
+        <td>${statusSelect(c)}</td>
+        <td style="text-align:right">
+          <button class="btn small primary" data-pay="${c.id}">Pay</button>
+          <button class="btn small" data-edit="${c.id}">Edit</button>
+          <button class="btn small danger" data-del="${c.id}">Delete</button>
         </td>
+      </tr>`;
+  }
+  function paidRow(c){
+    return `
+      <tr class="row-Paid">
+        <td class="mono">${esc(c.number)}</td>
+        <td class="supplier">${esc(c.supplier)}</td>
+        <td class="num mono">${money(c.amount)}</td>
+        <td class="num mono">${c.cash ? money(c.cash) : "–"}</td>
+        <td class="num mono">${c.chq ? money(c.chq) : "–"}</td>
+        <td class="mono">${c.paidDate ? esc(c.paidDate) : "–"}</td>
+        <td>${statusSelect(c)}</td>
         <td style="text-align:right">
           <button class="btn small" data-edit="${c.id}">Edit</button>
           <button class="btn small danger" data-del="${c.id}">Delete</button>
@@ -556,22 +675,28 @@ dialog .field{margin-bottom:12px}
       </tr>`;
   }
 
-  /* group cheques by date; dir 1 = earliest first, -1 = latest first */
-  function groupedTable(list, dir, highlightDays){
+  function groupedTable(list, dir, unpaid){
     const dates = Array.from(new Set(list.map(c => c.date))).sort();
     if (dir < 0) dates.reverse();
     const tm = tomorrow(), td = today();
     const body = dates.map(dt => {
       const items = list.filter(c => c.date === dt).sort(numCmp);
-      const isTom = highlightDays && dt === tm;
-      const cls = highlightDays ? (isTom ? " tomorrow-row" : dt === td ? " today" : "") : "";
-      return `<tr class="date-row${cls}"><td colspan="5"><div class="in"><span>${esc(dayLabel(dt))}</span><span class="meta">${items.length} cheque${items.length===1?"":"s"}  ·  Rs. ${money(sum(items))}</span></div></td></tr>` +
-             items.map(c => rowHTML(c, isTom)).join("");
+      const isTom = unpaid && dt === tm;
+      const cls = unpaid ? (isTom ? " tomorrow-row" : dt === td ? " today" : "") : "";
+      const meta = unpaid
+        ? `Balance Rs. ${money(sum(items.map(balOf)))}`
+        : `Rs. ${money(sum(items.map(c => c.amount)))}`;
+      const label = `<div class="in"><span>${esc(dayLabel(dt))}</span><span class="meta">${items.length} cheque${items.length===1?"":"s"}  ·  ${meta}</span></div>`;
+      const head = unpaid
+        ? `<td class="chk-cell"><input type="checkbox" data-seldate="${dt}" aria-label="Select all cheques on ${dt}"></td><td colspan="7">${label}</td>`
+        : `<td colspan="8">${label}</td>`;
+      return `<tr class="date-row${cls}">${head}</tr>` +
+             items.map(c => unpaid ? unpaidRow(c, isTom) : paidRow(c)).join("");
     }).join("");
-    return `<div class="table-wrap"><table>${THEAD}<tbody>${body}</tbody></table></div>`;
+    return `<div class="table-wrap"><table>${unpaid ? THEAD_UNPAID : THEAD_PAID}<tbody>${body}</tbody></table></div>`;
   }
 
-  function stat(k,v){ return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+  function stat(k, v, key){ return `<div class="stat${key ? " key" : ""}"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
 
   function renderTomorrow(){
     const tm = tomorrow();
@@ -585,12 +710,12 @@ dialog .field{margin-bottom:12px}
     }
     box.className = "tomorrow due";
     box.innerHTML = `
-      <h2>Tomorrow: ${due.length} cheque${due.length===1?"":"s"} to pay, Rs. ${money(sum(due))}</h2>
+      <h2>Tomorrow: ${due.length} cheque${due.length===1?"":"s"} to pay, Rs. ${money(sum(due.map(balOf)))}</h2>
       <div class="sub">${esc(dayLabel(tm))}</div>
       <div class="list">${due.map(c => `
         <div class="item">
           <span><span class="no">${esc(c.number)}</span>  ${esc(c.supplier)}${c.status === "Hold" ? '<span class="tag">HOLD</span>' : ""}</span>
-          <span class="amt">Rs. ${money(c.amount)}</span>
+          <span class="amt">Rs. ${money(balOf(c))}</span>
         </div>`).join("")}
       </div>`;
   }
@@ -598,34 +723,77 @@ dialog .field{margin-bottom:12px}
   function render(){
     renderTomorrow();
     const list = filtered();
-    const unpaid = list.filter(c => c.status !== "Paid");
+    shownUnpaid = list.filter(c => c.status !== "Paid");
     const paid = list.filter(c => c.status === "Paid");
-    const by = s => list.filter(c => c.status === s);
 
+    // keep only selections that are still visible
+    const visible = new Set(shownUnpaid.map(c => c.id));
+    selected = new Set([...selected].filter(id => visible.has(id)));
+
+    const pend = list.filter(c => c.status === "Pending");
+    const hold = list.filter(c => c.status === "Hold");
     $("summary").innerHTML =
       stat("Cheques shown", list.length) +
-      stat("Total (Rs.)", money(sum(list))) +
-      stat("Pending (Rs.)", money(sum(by("Pending"))) + " · " + by("Pending").length) +
-      stat("Hold (Rs.)", money(sum(by("Hold"))) + " · " + by("Hold").length) +
-      stat("Paid (Rs.)", money(sum(paid)) + " · " + paid.length);
+      stat("Total amount (Rs.)", money(sum(list.map(c => c.amount)))) +
+      stat("Balance to pay (Rs.)", money(sum(shownUnpaid.map(balOf))), true) +
+      stat("Pending balance (Rs.)", money(sum(pend.map(balOf))) + " · " + pend.length) +
+      stat("Hold balance (Rs.)", money(sum(hold.map(balOf))) + " · " + hold.length) +
+      stat("Paid by cash (Rs.)", money(sum(list.map(c => c.cash)))) +
+      stat("Paid by cheque (Rs.)", money(sum(list.map(c => c.chq))));
 
     const msg = t => `<div class="empty">${t}</div>`;
     if (loading) {
       $("unpaidBox").innerHTML = msg("Loading cheques…");
       $("paidBox").innerHTML = msg("Loading cheques…");
+      updateBulkBar();
       return;
     }
-    $("unpaidBox").innerHTML = unpaid.length
-      ? groupedTable(unpaid, 1, true)
+    $("unpaidBox").innerHTML = shownUnpaid.length
+      ? groupedTable(shownUnpaid, 1, true)
       : msg(cheques.length ? "No unpaid cheques match this filter." : "No cheques yet. Add the first one above.");
     $("paidBox").innerHTML = paid.length
       ? groupedTable(paid, -1, false)
       : msg("No paid cheques to show.");
+    updateBulkBar();
   }
+
+  /* ---------- selection / bulk bar ---------- */
+  function updateBulkBar(){
+    const n = shownUnpaid.filter(c => selected.has(c.id)).length;
+    const all = $("selAll");
+    all.checked = shownUnpaid.length > 0 && n === shownUnpaid.length;
+    all.indeterminate = n > 0 && n < shownUnpaid.length;
+    all.disabled = shownUnpaid.length === 0;
+    $("btnBulkPay").disabled = n === 0;
+    $("btnBulkPay").textContent = n ? "Mark " + n + " as Paid" : "Mark selected as Paid";
+    const bal = sum(shownUnpaid.filter(c => selected.has(c.id)).map(balOf));
+    $("selInfo").textContent = n
+      ? n + " selected · Balance Rs. " + money(bal)
+      : "Tick cheques, or tick a date to select that whole day.";
+    $("unpaidBox").querySelectorAll("[data-seldate]").forEach(cb => {
+      const ids = shownUnpaid.filter(c => c.date === cb.dataset.seldate).map(c => c.id);
+      const k = ids.filter(id => selected.has(id)).length;
+      cb.checked = ids.length > 0 && k === ids.length;
+      cb.indeterminate = k > 0 && k < ids.length;
+    });
+  }
+
+  $("selAll").addEventListener("change", e => {
+    if (e.target.checked) shownUnpaid.forEach(c => selected.add(c.id)); else selected.clear();
+    render();
+  });
+  $("btnBulkPay").addEventListener("click", () => {
+    const ids = shownUnpaid.filter(c => selected.has(c.id)).map(c => c.id);
+    if (!ids.length) return;
+    const holds = ids.filter(id => cheques.find(c => c.id === id).status === "Hold").length;
+    if (holds && !confirm(holds + " of the selected cheque(s) are on Hold. Pay them anyway?")) return;
+    openPay(ids, true);
+  });
 
   /* ---------- row actions ---------- */
   $("lists").addEventListener("click", async e => {
-    const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]");
+    const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]"), pay = e.target.closest("[data-pay]");
+    if (pay) openPay([pay.dataset.pay], false);
     if (ed) startEdit(ed.dataset.edit);
     if (del) {
       const c = cheques.find(x => x.id === del.dataset.del);
@@ -636,28 +804,201 @@ dialog .field{margin-bottom:12px}
       }
     }
   });
+
   $("lists").addEventListener("change", async e => {
+    const one = e.target.closest("[data-sel]");
+    if (one) { if (one.checked) selected.add(one.dataset.sel); else selected.delete(one.dataset.sel); render(); return; }
+    const day = e.target.closest("[data-seldate]");
+    if (day) {
+      shownUnpaid.filter(c => c.date === day.dataset.seldate)
+        .forEach(c => day.checked ? selected.add(c.id) : selected.delete(c.id));
+      render(); return;
+    }
     const s = e.target.closest("[data-status]"); if (!s) return;
     const c = cheques.find(x => x.id === s.dataset.status); if (!c) return;
-    const old = c.status; c.status = s.value; render();
-    const { error } = await sb.from("cheques").update({ status: c.status }).eq("id", c.id);
-    if (error) { c.status = old; showError("Could not update status: " + error.message); render(); }
+    const next = s.value;
+
+    if (next === "Paid") { render(); openPay([c.id], false); return; }   // paying needs details
+
+    const patch = { status: next };
+    if (c.status === "Paid") {
+      if (!confirm("Move cheque " + c.number + " back to " + next + "?\n\nIts cash/cheque payment details will be cleared.")) { render(); return; }
+      patch.cash_paid = 0; patch.cheque_paid = 0; patch.paid_date = null;
+    }
+    const { error } = await sb.from("cheques").update(patch).eq("id", c.id);
+    if (error) { showError("Could not update status: " + error.message); render(); return; }
+    c.status = next;
+    if (c.status !== "Paid" && "cash_paid" in patch) { c.cash = 0; c.chq = 0; c.paidDate = ""; }
+    render();
   });
 
-  /* ---------- export / backup / import ---------- */
+  /* ---------- payment dialog ---------- */
+  function openPay(ids, bulk){
+    const list = ids.map(id => cheques.find(c => c.id === id)).filter(Boolean);
+    if (!list.length) return;
+    payIds = list.map(c => c.id); payBulk = !!bulk;
+    $("payMsg").textContent = "";
+    $("payMethod").value = "Cheque";
+    $("payDate").value = today();
+
+    if (bulk) {
+      $("payTitle").textContent = "Mark " + list.length + " cheques as Paid";
+      $("payInfo").innerHTML =
+        `<div>${list.length} cheques selected</div>
+         <div>Total balance: <b>Rs. ${money(sum(list.map(balOf)))}</b></div>
+         <div class="muted">Each cheque is paid in full.</div>`;
+      $("payAmtField").classList.add("hidden");
+      $("payAmt").required = false;
+    } else {
+      const c = list[0], bal = balOf(c);
+      $("payTitle").textContent = "Pay cheque " + c.number;
+      $("payInfo").innerHTML =
+        `<div>${esc(c.supplier)}</div>
+         <div>Cheque amount: <b>Rs. ${money(c.amount)}</b></div>
+         <div>Already paid: <b>Rs. ${money(paidOf(c))}</b></div>
+         <div>Balance: <b>Rs. ${money(bal)}</b></div>`;
+      $("payAmtField").classList.remove("hidden");
+      $("payAmt").required = true;
+      $("payAmt").max = bal.toFixed(2);
+      $("payAmt").value = bal.toFixed(2);
+      showAfter();
+    }
+    $("dlgPay").showModal();
+  }
+
+  function showAfter(){
+    if (payBulk) return;
+    const c = cheques.find(x => x.id === payIds[0]); if (!c) return;
+    const amt = parseFloat($("payAmt").value);
+    if (isNaN(amt)) { $("payMsg").textContent = ""; return; }
+    const after = r2(balOf(c) - amt);
+    $("payMsg").textContent = after > 0.004
+      ? "Balance after this payment: Rs. " + money(after) + ". The cheque stays in the Cheque details list."
+      : "Fully paid. The cheque moves to the Paid list.";
+  }
+  $("payAmt").addEventListener("input", showAfter);
+  $("payCancel").addEventListener("click", () => $("dlgPay").close());
+
+  $("payForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const method = $("payMethod").value;
+    const date = $("payDate").value || today();
+    $("paySave").disabled = true; showError("");
+
+    const jobs = [];
+    if (payBulk) {
+      payIds.forEach(id => {
+        const c = cheques.find(x => x.id === id); if (!c) return;
+        const bal = balOf(c);
+        jobs.push({ c, patch: {
+          cash_paid:   r2(c.cash + (method === "Cash" ? bal : 0)),
+          cheque_paid: r2(c.chq  + (method === "Cheque" ? bal : 0)),
+          paid_date: date, status: "Paid" } });
+      });
+    } else {
+      const c = cheques.find(x => x.id === payIds[0]);
+      const amt = r2(parseFloat($("payAmt").value));
+      const bal = balOf(c);
+      if (isNaN(amt) || amt <= 0 || amt > bal + 0.001) {
+        $("payMsg").textContent = "Enter an amount between 0.01 and " + money(bal) + ".";
+        $("paySave").disabled = false; return;
+      }
+      const cash = r2(c.cash + (method === "Cash" ? amt : 0));
+      const chq  = r2(c.chq  + (method === "Cheque" ? amt : 0));
+      const full = r2(cash + chq) >= c.amount - 0.005;
+      jobs.push({ c, patch: { cash_paid:cash, cheque_paid:chq, paid_date:date, status: full ? "Paid" : c.status } });
+    }
+
+    let failed = null;
+    for (let i = 0; i < jobs.length; i += 10) {
+      const res = await Promise.all(jobs.slice(i, i + 10).map(j => sb.from("cheques").update(j.patch).eq("id", j.c.id)));
+      const bad = res.find(r => r.error);
+      if (bad) { failed = bad.error; break; }
+      jobs.slice(i, i + 10).forEach(j => {
+        j.c.cash = j.patch.cash_paid; j.c.chq = j.patch.cheque_paid;
+        j.c.paidDate = j.patch.paid_date; j.c.status = j.patch.status;
+      });
+    }
+    $("paySave").disabled = false;
+    $("dlgPay").close();
+    if (failed) { showError("Could not save payment: " + failed.message); loadAll(); return; }
+    render();
+  });
+
+  /* ---------- export to Excel ---------- */
+  function exportList(){
+    const f = $("exFrom").value, t = $("exTo").value, st = $("exStatus").value, sp = $("exSup").value;
+    return cheques.filter(c =>
+      (!f || c.date >= f) && (!t || c.date <= t) && (!st || c.status === st) && (!sp || c.supplier === sp)
+    ).sort((a,b) => a.date.localeCompare(b.date) || numCmp(a,b));
+  }
+  function updateExCount(){
+    const n = exportList().length;
+    $("exCount").textContent = n + " cheque" + (n === 1 ? "" : "s") + " will be exported.";
+  }
+  $("btnExport").addEventListener("click", () => {
+    $("exSup").innerHTML = `<option value="">All suppliers</option>` + allSupplierNames().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    updateExCount();
+    $("dlgExport").showModal();
+  });
+  ["exFrom","exTo","exStatus","exSup"].forEach(id => $(id).addEventListener("change", updateExCount));
+  $("exCancel").addEventListener("click", () => $("dlgExport").close());
+
+  $("exportForm").addEventListener("submit", e => {
+    e.preventDefault();
+    if (!window.XLSX) { alert("The Excel library could not load. Check your internet connection and try again."); return; }
+    const list = exportList();
+    if (!list.length) { alert("No cheques match these choices."); return; }
+
+    const head = ["Date","Cheque No","Supplier","Cheque Amount","Paid by Cash","Paid by Cheque","Total Paid","Balance","Status","Paid Date"];
+    const rows = list.map(c => [c.date, String(c.number), c.supplier, c.amount, c.cash, c.chq, paidOf(c), balOf(c), c.status, c.paidDate || ""]);
+    const tot = k => sum(list.map(k));
+    const totalRow = ["", "", "TOTAL", tot(c => c.amount), tot(c => c.cash), tot(c => c.chq), tot(paidOf), tot(balOf), "", ""];
+
+    const ws = XLSX.utils.aoa_to_sheet([head, ...rows, [], totalRow]);
+    ws["!cols"] = [{wch:12},{wch:14},{wch:28},{wch:16},{wch:14},{wch:15},{wch:14},{wch:14},{wch:10},{wch:12}];
+    for (let r = 1; r <= rows.length + 2; r++) for (let col = 3; col <= 7; col++) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c: col })];
+      if (cell && cell.t === "n") cell.z = "#,##0.00";
+    }
+
+    const f = $("exFrom").value, t = $("exTo").value;
+    const byStatus = s => list.filter(c => c.status === s);
+    const sm = [
+      ["Cheque Register - Summary"],
+      ["From date", f || "All"],
+      ["To date", t || "All"],
+      [],
+      ["Cheques exported", list.length],
+      ["Total cheque amount", totalRow[3]],
+      ["Paid by cash", totalRow[4]],
+      ["Paid by cheque", totalRow[5]],
+      ["Total paid", totalRow[6]],
+      ["Balance pending", totalRow[7]],
+      [],
+      ["Status", "Cheques", "Cheque Amount", "Balance"],
+      ...STATUSES.map(s => [s, byStatus(s).length, sum(byStatus(s).map(c => c.amount)), sum(byStatus(s).map(balOf))])
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(sm);
+    ws2["!cols"] = [{wch:24},{wch:16},{wch:16},{wch:16}];
+    const fmt = (sheet, r, c) => { const cell = sheet[XLSX.utils.encode_cell({ r, c })]; if (cell && cell.t === "n") cell.z = "#,##0.00"; };
+    for (let r = 5; r <= 9; r++) fmt(ws2, r, 1);
+    for (let r = 12; r <= 14; r++) { fmt(ws2, r, 2); fmt(ws2, r, 3); }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cheques");
+    XLSX.utils.book_append_sheet(wb, ws2, "Summary");
+    XLSX.writeFile(wb, "cheques-" + (f || "all") + "-to-" + (t || "all") + ".xlsx");
+    $("dlgExport").close();
+  });
+
+  /* ---------- backup / import ---------- */
   function download(name, text, type){
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type }));
     a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 500);
   }
-  $("btnExport").addEventListener("click", () => {
-    const list = filtered().sort((a,b) => a.date.localeCompare(b.date) || numCmp(a,b));
-    const q = v => '"' + String(v).replace(/"/g,'""') + '"';
-    const csv = ["Date,Cheque No,Supplier,Amount,Status"]
-      .concat(list.map(c => [c.date, q(c.number), q(c.supplier), c.amount.toFixed(2), c.status].join(","))).join("\n");
-    download("cheques-" + today() + ".csv", "\ufeff" + csv, "text/csv;charset=utf-8");
-  });
   $("btnBackup").addEventListener("click", () =>
     download("cheque-backup-" + today() + ".json",
       JSON.stringify(cheques.map(({id, ...rest}) => rest), null, 2), "application/json"));
@@ -673,10 +1014,13 @@ dialog .field{margin-bottom:12px}
           throw new Error("bad");
         const key = c => [c.date, String(c.number), String(c.supplier).toLowerCase(), Number(c.amount).toFixed(2)].join("|");
         const have = new Set(cheques.map(key));
-        const fresh = data.filter(c => !have.has(key(c))).map(c => ({
-          date:String(c.date), number:String(c.number), amount:Number(c.amount),
-          supplier:String(c.supplier).trim(), status: STATUSES.includes(c.status) ? c.status : "Pending"
-        }));
+        const fresh = data.filter(c => !have.has(key(c))).map(c => {
+          const amount = Number(c.amount), status = STATUSES.includes(c.status) ? c.status : "Pending";
+          const cash = Number(c.cash || 0); let chq = Number(c.chq || 0);
+          if (status === "Paid" && cash + chq === 0) chq = amount;
+          return { date:String(c.date), number:String(c.number), amount, supplier:String(c.supplier).trim(),
+                   status, cash, chq, paidDate: c.paidDate || null };
+        });
         if (!fresh.length) { alert("Nothing new to import. All cheques in this file already exist."); return; }
         if (!confirm("Add " + fresh.length + " new cheques from this file? Existing cheques are kept.")) return;
 
@@ -685,7 +1029,10 @@ dialog .field{margin-bottom:12px}
         fresh.forEach(c => { const k = c.supplier.toLowerCase(); if (c.supplier && !known.has(k)) { known.add(k); newSup.push({ name:c.supplier }); } });
         if (newSup.length) await sb.from("suppliers").insert(newSup);
 
-        const rows = fresh.map(toRow);
+        const rows = fresh.map(c => ({
+          cheque_date:c.date, cheque_number:c.number, amount:c.amount, supplier:c.supplier, status:c.status,
+          cash_paid:c.cash, cheque_paid:c.chq, paid_date:c.paidDate
+        }));
         for (let i = 0; i < rows.length; i += 500) {
           const { error } = await sb.from("cheques").insert(rows.slice(i, i + 500));
           if (error) { showError("Import stopped: " + error.message); break; }
@@ -697,7 +1044,7 @@ dialog .field{margin-bottom:12px}
     r.readAsText(f);
   });
 
-  /* refresh the "tomorrow" box when the day changes while the page stays open */
+  /* refresh "tomorrow" when the day changes while the page stays open */
   let lastDay = today();
   setInterval(() => { if (today() !== lastDay) { lastDay = today(); render(); } }, 60000);
 })();

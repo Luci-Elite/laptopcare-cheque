@@ -133,8 +133,9 @@ td select.Paid{background:var(--paid-bg);color:var(--paid)}
 .empty{padding:28px;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:4px}
 .note{font-size:13px;color:var(--muted);margin:10px 0 0}
 .warn{color:var(--warn);font-size:13px;min-height:18px;margin-top:6px}
+.warn.err{color:var(--danger);font-weight:500}
 .banner{background:var(--warn-bg);color:var(--warn);padding:10px 14px;border-radius:4px;font-size:14px;margin-bottom:14px}
-.banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger);margin-bottom:0}
+.banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger);margin-bottom:0;position:sticky;top:8px;z-index:30;border:1px solid var(--danger)}
 
 dialog{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:22px;max-width:420px;width:calc(100% - 32px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
@@ -837,7 +838,7 @@ dialog .field{margin-bottom:12px}
     const list = ids.map(id => cheques.find(c => c.id === id)).filter(Boolean);
     if (!list.length) return;
     payIds = list.map(c => c.id); payBulk = !!bulk;
-    $("payMsg").textContent = "";
+    $("payMsg").textContent = ""; $("payMsg").classList.remove("err");
     $("payMethod").value = "Cheque";
     $("payDate").value = today();
 
@@ -870,6 +871,7 @@ dialog .field{margin-bottom:12px}
     if (payBulk) return;
     const c = cheques.find(x => x.id === payIds[0]); if (!c) return;
     const amt = parseFloat($("payAmt").value);
+    $("payMsg").classList.remove("err");
     if (isNaN(amt)) { $("payMsg").textContent = ""; return; }
     const after = r2(balOf(c) - amt);
     $("payMsg").textContent = after > 0.004
@@ -920,8 +922,13 @@ dialog .field{margin-bottom:12px}
       });
     }
     $("paySave").disabled = false;
+    if (failed) {
+      render();   // show anything that did save
+      $("payMsg").classList.add("err");
+      $("payMsg").textContent = "Could not save payment: " + dbHint(failed.message);
+      return;     // keep the box open so the message can be read
+    }
     $("dlgPay").close();
-    if (failed) { showError("Could not save payment: " + failed.message); loadAll(); return; }
     render();
   });
 

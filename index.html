@@ -11,96 +11,128 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
-  --bg:#e9eef0; --panel:#ffffff; --ink:#13242c; --muted:#5b6b73; --line:#d3dce0;
+  --bg:#eef2f4; --panel:#ffffff; --ink:#13242c; --muted:#5b6b73; --line:#d8e0e4;
   --accent:#0c6670; --accent-ink:#ffffff;
+  --side-bg:#0f2830; --side-ink:#c5d8de; --side-accent:#5fd0da;
   --pending:#2b5aa6; --pending-bg:#e3ecf8;
   --hold:#a3221a; --hold-bg:#f5c6c2; --hold-row:#fdeceb;
   --paid:#1c7a40; --paid-bg:#dcf1e4;
   --warn:#a45f00; --warn-bg:#fbebd0;
   --danger:#b3261e;
   --alert-bg:#c62828; --alert-ink:#ffffff;
+  --shadow:0 1px 2px rgba(15,40,48,.06);
   --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){
   :root{
-    --bg:#0f1a1f; --panel:#17262d; --ink:#e6eef1; --muted:#97a9b1; --line:#2a3d46;
+    --bg:#0c1519; --panel:#16252c; --ink:#e6eef1; --muted:#97a9b1; --line:#2a3d46;
     --accent:#3fb3bf; --accent-ink:#06191c;
+    --side-bg:#08100e; --side-ink:#b4c8ce; --side-accent:#5fd0da;
     --pending:#8db4f0; --pending-bg:#1d3252;
     --hold:#ffa39b; --hold-bg:#6b2a28; --hold-row:#3a1f20;
     --paid:#7fd9a0; --paid-bg:#17402a;
     --warn:#f0b45a; --warn-bg:#473213;
     --danger:#ff8a80;
     --alert-bg:#a52121; --alert-ink:#ffffff;
+    --shadow:none;
   }
 }
 *{box-sizing:border-box}
 html,body{margin:0}
 body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
 button,input,select{font:inherit;color:inherit}
+a{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hidden{display:none !important}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
+/* ---------- login ---------- */
 .login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
-.login{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:32px 28px}
+.login{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:32px 28px;box-shadow:var(--shadow)}
+.login .logo{margin-bottom:14px}
 .login h1{margin:0 0 4px;font-size:22px;font-weight:600}
 .login p{margin:0 0 22px;color:var(--muted)}
 .login .err{color:var(--danger);min-height:20px;margin:8px 0 0;font-size:14px}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
 
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
-.top h1{margin:0;font-size:18px;font-weight:600}
-.top .who{font-size:13px;color:var(--muted)}
-.top .actions{display:flex;gap:8px;flex-wrap:wrap}
-main{max-width:1180px;margin:0 auto;padding:20px 24px 48px;display:grid;gap:18px}
-section.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
-section.card h2{margin:0 0 14px;font-size:16px;font-weight:600}
+/* ---------- app shell ---------- */
+.app{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;background:var(--side-bg);color:var(--side-ink);display:flex;flex-direction:column;padding:18px 14px;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 6px 18px}
+.brand b{display:block;color:#fff;font-size:16px;font-weight:600;line-height:1.2}
+.brand small{color:var(--side-ink);opacity:.75;font-size:12px}
+.nav{display:grid;gap:4px}
+.nav-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.55;padding:0 12px;margin:22px 0 6px}
+.nav-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;background:transparent;color:inherit;border-radius:8px;cursor:pointer;font-weight:500;text-align:left;min-height:42px}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 3px 0 0 var(--side-accent)}
+.nav-item.sm{min-height:38px;font-size:14px;font-weight:400}
+.side-foot{margin-top:auto;padding-top:12px}
+.who{font-size:12px;opacity:.7;padding:10px 12px 6px;word-break:break-all}
+.scrim{display:none}
 
-/* tomorrow alert */
-.tomorrow{border-radius:6px;overflow:hidden}
-.tomorrow.due{background:var(--alert-bg);color:var(--alert-ink);padding:16px 18px}
+.content{padding:24px 28px 56px;width:100%;max-width:1280px;margin:0 auto;display:grid;gap:18px;align-content:start}
+.page-head{display:flex;align-items:center;gap:14px}
+.page-head h1{margin:0;font-size:24px;font-weight:600;line-height:1.2}
+.page-head p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.icon-btn{display:none;border:1px solid var(--line);background:var(--panel);border-radius:8px;width:42px;height:42px;cursor:pointer;place-items:center}
+.tab{display:grid;gap:18px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;box-shadow:var(--shadow)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.card-head h2{margin:0;font-size:16px;font-weight:600}
+.card-head .count{color:var(--muted);font-size:13px}
+.card-head input{max-width:260px}
+
+/* ---------- tomorrow alert ---------- */
+.tomorrow{border-radius:10px;overflow:hidden}
+.tomorrow.due{background:var(--alert-bg);color:var(--alert-ink);padding:18px 20px}
 .tomorrow.due h2{margin:0;font-size:17px;font-weight:600}
 .tomorrow.due .sub{opacity:.9;font-size:14px;margin:2px 0 12px}
 .tomorrow .list{display:grid;gap:6px}
-.tomorrow .item{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:rgba(255,255,255,.14);padding:8px 12px;border-radius:4px}
+.tomorrow .item{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:rgba(255,255,255,.14);padding:8px 12px;border-radius:6px}
 .tomorrow .item .no,.tomorrow .item .amt{font-family:var(--mono);font-weight:500}
 .tomorrow .item .tag{font-size:12px;font-weight:600;background:#fff;color:var(--alert-bg);padding:1px 8px;border-radius:99px;margin-left:8px}
 .tomorrow.none{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:12px 16px;font-size:14px}
 
+/* ---------- forms / buttons ---------- */
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
-input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel);min-height:40px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);min-height:40px}
 input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;accent-color:var(--accent);cursor:pointer;vertical-align:middle}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
 .row-btns{display:flex;gap:8px;flex-wrap:wrap}
-
-.btn{border:1px solid var(--line);background:var(--panel);padding:9px 14px;border-radius:4px;cursor:pointer;min-height:40px;font-weight:500}
+.btn{border:1px solid var(--line);background:var(--panel);padding:9px 14px;border-radius:6px;cursor:pointer;min-height:40px;font-weight:500}
 .btn:hover{border-color:var(--accent)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.primary:hover:not(:disabled){filter:brightness(1.08)}
 .btn.small{padding:5px 10px;min-height:32px;font-size:13px}
 .btn.danger{color:var(--danger)}
+.sup-add{display:flex;gap:8px;flex-wrap:wrap;align-items:end;max-width:560px}
+.sup-add > div{flex:1 1 240px}
 
-.sup-add{display:flex;gap:8px;flex-wrap:wrap;align-items:end;max-width:520px}
-.sup-add > div{flex:1 1 220px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 12px;border:1px solid var(--line);border-radius:99px;font-size:14px}
-.chip button{border:0;background:transparent;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;width:24px;height:24px;border-radius:50%}
-.chip button:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
-
-.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+/* ---------- stat cards ---------- */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
 .stat .k{font-size:13px;color:var(--muted)}
-.stat .v{font-family:var(--mono);font-size:18px;font-weight:500;margin-top:2px}
-.stat.key{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}
+.stat .v{font-family:var(--mono);font-size:24px;font-weight:500;margin-top:4px;line-height:1.2}
+.stat .sub{font-size:13px;color:var(--muted);margin-top:4px}
+.stat.key{border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+.stat.pending{border-left-color:var(--pending)}
+.stat.hold{border-left-color:var(--hold)}
+.stat.paid{border-left-color:var(--paid)}
 
-/* bulk bar */
-.bulk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
+/* ---------- bulk bar ---------- */
+.bulk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
 .chk{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin:0;cursor:pointer}
 .bulk .info{color:var(--muted);font-size:14px;flex:1 1 auto}
 
+/* ---------- tables ---------- */
 .lists{display:grid;gap:18px}
-.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
-table{width:100%;border-collapse:collapse;min-width:900px}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+table.wide{min-width:900px}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
 th{font-size:13px;font-weight:600;color:var(--muted);background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
 tbody tr:last-child td{border-bottom:0}
@@ -109,8 +141,10 @@ td.mono{font-family:var(--mono)}
 td.supplier{white-space:normal;min-width:150px}
 td.bal{font-weight:600}
 td.chk-cell,th.chk-cell{width:40px;padding-right:0}
+td.acts{text-align:right}
 .sub-note{display:block;font-size:12px;color:var(--muted);font-family:var(--sans)}
 tr:hover td{background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
+tr.editing td{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
 
 tr.date-row td{background:color-mix(in srgb,var(--bg) 85%,var(--panel));padding:8px 12px;font-weight:600}
 tr.date-row:hover td{background:color-mix(in srgb,var(--bg) 85%,var(--panel))}
@@ -130,22 +164,62 @@ td select{width:auto;min-height:32px;padding:4px 8px;font-size:13px;font-weight:
 td select.Pending{background:var(--pending-bg);color:var(--pending)}
 td select.Hold{background:var(--hold-bg);color:var(--hold)}
 td select.Paid{background:var(--paid-bg);color:var(--paid)}
-.empty{padding:28px;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:4px}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:500}
+.badge.Pending{background:var(--pending-bg);color:var(--pending)}
+.badge.Hold{background:var(--hold-bg);color:var(--hold)}
+.badge.Paid{background:var(--paid-bg);color:var(--paid)}
+
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:6px}
 .note{font-size:13px;color:var(--muted);margin:10px 0 0}
 .warn{color:var(--warn);font-size:13px;min-height:18px;margin-top:6px}
 .warn.err{color:var(--danger);font-weight:500}
-.banner{background:var(--warn-bg);color:var(--warn);padding:10px 14px;border-radius:4px;font-size:14px;margin-bottom:14px}
+.banner{background:var(--warn-bg);color:var(--warn);padding:10px 14px;border-radius:6px;font-size:14px;margin-bottom:14px}
 .banner.error{background:color-mix(in srgb,var(--danger) 14%,var(--panel));color:var(--danger);margin-bottom:0;position:sticky;top:8px;z-index:30;border:1px solid var(--danger)}
 
-dialog{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:22px;max-width:420px;width:calc(100% - 32px)}
+/* ---------- dialogs / toast ---------- */
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:22px;max-width:420px;width:calc(100% - 32px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 dialog h2{margin:0 0 14px;font-size:17px}
 dialog .field{margin-bottom:12px}
-.paybox{border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin-bottom:14px;font-size:14px;display:grid;gap:3px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
+.paybox{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:14px;display:grid;gap:3px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
 .paybox .muted{color:var(--muted)}
 .paybox b{font-family:var(--mono);font-weight:500}
+.toast{position:fixed;right:20px;bottom:20px;background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:14px;z-index:60;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:none}
 
-@media (max-width:600px){ .top{padding:12px 14px} main{padding:14px 12px 40px} }
+/* ---------- sidebar extras: quick find, badges, user card ---------- */
+.nav .nav-label:first-child{margin-top:6px}
+.side-search{position:relative;margin:0 4px 6px}
+.side-search > .ic{position:absolute;left:11px;top:11px;width:18px;height:18px;opacity:.7;pointer-events:none}
+.side-search input{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#fff;padding-left:36px;border-radius:8px}
+.side-search input::placeholder{color:rgba(255,255,255,.55)}
+.qs-results{position:absolute;left:0;right:0;top:46px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.28);z-index:70;overflow:hidden}
+.qs-item{display:block;width:100%;text-align:left;padding:9px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;font-size:13px;line-height:1.35}
+.qs-item:last-child{border-bottom:0}
+.qs-item:hover,.qs-item:focus-visible{background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.qs-item b{font-family:var(--mono);font-weight:500}
+.qs-item .muted{color:var(--muted)}
+.qs-empty{padding:10px 12px;font-size:13px;color:var(--muted)}
+.badge-n{margin-left:auto;background:rgba(255,255,255,.16);color:#fff;border-radius:99px;font-size:12px;padding:1px 8px;min-width:22px;text-align:center}
+.badge-n:empty{display:none}
+.user{display:flex;align-items:center;gap:10px;padding:10px 12px 6px}
+.avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;font-weight:600;font-size:13px;flex:none;text-transform:uppercase}
+.user .who{padding:0;font-size:12px}
+.card-head select{width:auto}
+.head-tools{display:flex;gap:8px;flex-wrap:wrap}
+td.when{white-space:nowrap}
+td.when .sub-note{margin-top:1px}
+
+/* ---------- small screens: menu becomes a slide-in drawer ---------- */
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;left:0;top:0;bottom:0;width:272px;z-index:50;transform:translateX(-102%);transition:transform .2s}
+  .side.open{transform:none}
+  .scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40}
+  .icon-btn{display:grid}
+  .content{padding:16px 14px 48px}
+  .page-head h1{font-size:21px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
 </head>
@@ -154,6 +228,7 @@ dialog .field{margin-bottom:12px}
 <!-- ================= LOGIN ================= -->
 <div id="loginView" class="login-wrap">
   <form class="login" id="loginForm" autocomplete="on">
+    <div class="logo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg></div>
     <h1>Cheque Register</h1>
     <p>Sign in to view and manage cheque details.</p>
     <div class="banner hidden" id="cfgBanner"></div>
@@ -171,104 +246,190 @@ dialog .field{margin-bottom:12px}
 </div>
 
 <!-- ================= APP ================= -->
-<div id="appView" class="hidden">
-  <header class="top">
-    <div>
-      <h1>Cheque Register</h1>
-      <div class="who" id="who"></div>
+<div id="appView" class="app hidden">
+
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="logo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg></div>
+      <div><b>Cheque Register</b><small>Payment tracker</small></div>
     </div>
-    <div class="actions">
-      <button class="btn small" id="btnExport">Export to Excel</button>
-      <button class="btn small" id="btnBackup">Backup</button>
-      <button class="btn small" id="btnImport">Import</button>
-      <button class="btn small" id="btnSettings">Change password</button>
-      <button class="btn small" id="btnLogout">Sign out</button>
+
+    <div class="side-search">
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input id="quickSearch" type="search" placeholder="Quick find cheque / supplier" autocomplete="off" aria-label="Quick find cheque or supplier">
+      <div class="qs-results hidden" id="qsResults"></div>
+    </div>
+
+    <nav class="nav" aria-label="Main menu">
+      <div class="nav-label">Overview</div>
+      <button class="nav-item active" data-tab="dashboard" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard <span class="badge-n" id="nbDash" title="Unpaid cheques"></span>
+      </button>
+
+      <div class="nav-label">Cheques</div>
+      <button class="nav-item" data-tab="cheques" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></svg>
+        New Cheques
+      </button>
+      <button class="nav-item" data-tab="recent" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Recently Updated <span class="badge-n" id="nbRecent" title="Updated today"></span>
+      </button>
+
+      <div class="nav-label">Manage</div>
+      <button class="nav-item" data-tab="suppliers" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.2c2.4.2 4 2.2 4 4.8"/></svg>
+        Suppliers <span class="badge-n" id="nbSup" title="Suppliers"></span>
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="nav-label" style="margin-top:0">Tools</div>
+      <button class="nav-item sm" id="btnExport" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Export to Excel</button>
+      <button class="nav-item sm" id="btnBackup" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>Backup</button>
+      <button class="nav-item sm" id="btnImport" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 9l5-5 5 5M5 20h14"/></svg>Import</button>
+      <button class="nav-item sm" id="btnSettings" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L20 3M16 7l3 3"/></svg>Change password</button>
+      <div class="user"><span class="avatar" id="avatar">?</span><span class="who" id="who"></span></div>
+      <button class="nav-item sm" id="btnLogout" type="button"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/></svg>Sign out</button>
       <input type="file" id="fileImport" accept=".json,application/json" class="hidden">
     </div>
-  </header>
+  </aside>
+  <div class="scrim" id="scrim"></div>
 
-  <main>
+  <div class="content">
+    <header class="page-head">
+      <button class="icon-btn" id="menuBtn" type="button" aria-label="Open menu"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div><h1 id="pageTitle">Dashboard</h1><p id="pageSub"></p></div>
+    </header>
+
     <div class="banner error hidden" id="appErr" role="alert"></div>
 
-    <div id="tomorrowBox" class="tomorrow none" role="status"></div>
+    <!-- ===== TAB: DASHBOARD ===== -->
+    <div class="tab" data-tab="dashboard">
+      <div id="tomorrowBox" class="tomorrow none" role="status"></div>
 
-    <!-- add / edit cheque -->
-    <section class="card">
-      <h2 id="formTitle">Add cheque</h2>
-      <form id="chequeForm">
-        <div class="grid">
-          <div><label for="fDate">Cheque date</label><input type="date" id="fDate" required></div>
-          <div><label for="fNo">Cheque number</label><input id="fNo" inputmode="numeric" autocomplete="off" required></div>
-          <div><label for="fAmt">Amount (Rs.)</label><input id="fAmt" type="number" step="0.01" min="0" inputmode="decimal" required></div>
-          <div><label for="fSup">Supplier</label><select id="fSup" required></select></div>
-          <div>
-            <label for="fStatus">Status</label>
-            <select id="fStatus"><option>Pending</option><option>Hold</option></select>
-          </div>
-          <div class="row-btns">
-            <button class="btn primary" type="submit" id="btnSave">Add cheque</button>
-            <button class="btn hidden" type="button" id="btnCancel">Cancel</button>
-          </div>
-        </div>
-        <div class="warn" id="dupWarn" role="status"></div>
-      </form>
-    </section>
+      <div class="summary" id="summary"></div>
 
-    <!-- suppliers -->
-    <section class="card">
-      <h2>Suppliers</h2>
-      <form id="supForm" class="sup-add">
-        <div><label for="sName">New supplier name</label><input id="sName" autocomplete="off" required></div>
-        <button class="btn primary" type="submit" id="btnAddSup">Add supplier</button>
-      </form>
-      <div class="warn" id="supMsg" role="status"></div>
-      <div class="chips" id="supList"></div>
-      <p class="note">Suppliers you add appear in the Supplier dropdown above. Deleting a supplier does not delete its cheques.</p>
-    </section>
-
-    <!-- filters -->
-    <section class="card">
-      <h2>Filter</h2>
-      <div class="grid">
-        <div><label for="flMonth">Month</label><input type="month" id="flMonth"></div>
-        <div><label for="flFrom">From date</label><input type="date" id="flFrom"></div>
-        <div><label for="flTo">To date</label><input type="date" id="flTo"></div>
-        <div><label for="flSup">Supplier</label><select id="flSup"></select></div>
-        <div>
-          <label for="flStatus">Status</label>
-          <select id="flStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option></select>
-        </div>
-        <div><label for="flSearch">Cheque no. search</label><input id="flSearch" placeholder="Search" autocomplete="off"></div>
-        <div class="row-btns">
-          <button class="btn primary" id="btnFilter" type="button">Apply filter</button>
-          <button class="btn" id="btnClear" type="button">Clear</button>
-        </div>
-      </div>
-      <p class="note">Pick a month, or a date range. Choosing one clears the other.</p>
-    </section>
-
-    <div class="summary" id="summary"></div>
-
-    <div class="lists" id="lists">
       <section class="card">
-        <h2>Cheque details</h2>
-        <div class="bulk">
-          <label class="chk"><input type="checkbox" id="selAll"> Select all shown</label>
-          <span class="info" id="selInfo">Tick cheques, or tick a date to select that whole day.</span>
-          <button class="btn primary small" id="btnBulkPay" type="button" disabled>Mark selected as Paid</button>
+        <div class="card-head"><h2>Filter</h2></div>
+        <div class="grid">
+          <div><label for="flMonth">Month</label><input type="month" id="flMonth"></div>
+          <div><label for="flFrom">From date</label><input type="date" id="flFrom"></div>
+          <div><label for="flTo">To date</label><input type="date" id="flTo"></div>
+          <div><label for="flSup">Supplier</label><select id="flSup"></select></div>
+          <div>
+            <label for="flStatus">Status</label>
+            <select id="flStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option></select>
+          </div>
+          <div><label for="flSearch">Cheque no. search</label><input id="flSearch" placeholder="Search" autocomplete="off"></div>
+          <div class="row-btns">
+            <button class="btn primary" id="btnFilter" type="button">Apply filter</button>
+            <button class="btn" id="btnClear" type="button">Clear</button>
+          </div>
         </div>
-        <div id="unpaidBox"></div>
-        <p class="note">Grouped by date, earliest first. Hold cheques show in light red. Press Pay to record a cash or cheque payment. Fully paid cheques move to the Paid list below.</p>
+        <p class="note">Pick a month, or a date range. Choosing one clears the other.</p>
+      </section>
+
+      <div class="lists" id="lists">
+        <section class="card">
+          <div class="card-head"><h2>Cheque details</h2></div>
+          <div class="bulk">
+            <label class="chk"><input type="checkbox" id="selAll"> Select all shown</label>
+            <span class="info" id="selInfo">Tick cheques, or tick a date to select that whole day.</span>
+            <button class="btn primary small" id="btnBulkPay" type="button" disabled>Mark selected as Paid</button>
+          </div>
+          <div id="unpaidBox"></div>
+          <p class="note">Grouped by date, earliest first. Hold cheques show in light red. Press Pay to record a cash or cheque payment. Fully paid cheques move to the Paid list below.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Paid cheques</h2></div>
+          <div id="paidBox"></div>
+          <p class="note">Grouped by date, latest first.</p>
+        </section>
+      </div>
+    </div>
+
+    <!-- ===== TAB: NEW CHEQUES ===== -->
+    <div class="tab hidden" data-tab="cheques">
+      <section class="card">
+        <div class="card-head"><h2 id="formTitle">Add cheque</h2></div>
+        <form id="chequeForm">
+          <div class="grid">
+            <div><label for="fDate">Cheque date</label><input type="date" id="fDate" required></div>
+            <div><label for="fNo">Cheque number</label><input id="fNo" inputmode="numeric" autocomplete="off" required></div>
+            <div><label for="fAmt">Amount (Rs.)</label><input id="fAmt" type="number" step="0.01" min="0" inputmode="decimal" required></div>
+            <div><label for="fSup">Supplier</label><select id="fSup" required></select></div>
+            <div>
+              <label for="fStatus">Status</label>
+              <select id="fStatus"><option>Pending</option><option>Hold</option></select>
+            </div>
+            <div class="row-btns">
+              <button class="btn primary" type="submit" id="btnSave">Add cheque</button>
+              <button class="btn hidden" type="button" id="btnCancel">Cancel</button>
+            </div>
+          </div>
+          <div class="warn" id="dupWarn" role="status"></div>
+        </form>
+        <p class="note" style="margin-top:0">Supplier not in the list? <a href="#suppliers">Add a supplier</a> first.</p>
       </section>
 
       <section class="card">
-        <h2>Paid cheques</h2>
-        <div id="paidBox"></div>
-        <p class="note">Grouped by date, latest first.</p>
+        <div class="card-head">
+          <div><h2>Update cheques</h2><span class="count" id="chqCount"></span></div>
+          <input id="chqSearch" placeholder="Search cheque no. or supplier" autocomplete="off" aria-label="Search cheques">
+        </div>
+        <div id="chqListBox"></div>
+        <p class="note">Press Edit to load a cheque into the form above, change it and save. Newest dates first.</p>
       </section>
     </div>
-  </main>
+
+    <!-- ===== TAB: RECENTLY UPDATED ===== -->
+    <div class="tab hidden" data-tab="recent">
+      <section class="card">
+        <div class="card-head">
+          <div><h2>Recently updated cheques</h2><span class="count" id="recCount"></span></div>
+          <div class="head-tools">
+            <select id="recRange" aria-label="Period">
+              <option value="1">Today</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="0" selected>All time</option>
+            </select>
+            <input id="recSearch" placeholder="Search cheque no. or supplier" autocomplete="off" aria-label="Search recently updated cheques">
+          </div>
+        </div>
+        <div class="banner hidden" id="recHint"></div>
+        <div id="recBox"></div>
+        <p class="note">Newest changes first. A cheque shows here when it is added, edited, paid or its status is changed.</p>
+      </section>
+    </div>
+
+    <!-- ===== TAB: SUPPLIERS ===== -->
+    <div class="tab hidden" data-tab="suppliers">
+      <section class="card">
+        <div class="card-head"><h2>Add supplier</h2></div>
+        <form id="supForm" class="sup-add">
+          <div><label for="sName">New supplier name</label><input id="sName" autocomplete="off" required></div>
+          <button class="btn primary" type="submit" id="btnAddSup">Add supplier</button>
+        </form>
+        <div class="warn" id="supMsg" role="status"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div><h2>All suppliers</h2><span class="count" id="supCount"></span></div>
+          <input id="supSearch" placeholder="Search supplier" autocomplete="off" aria-label="Search suppliers">
+        </div>
+        <div id="supTable"></div>
+        <p class="note">Suppliers you add appear in the Supplier dropdown. Deleting a supplier does not delete its cheques.</p>
+      </section>
+    </div>
+  </div>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- change password dialog -->
 <dialog id="dlgSettings">
@@ -330,8 +491,8 @@ dialog .field{margin-bottom:12px}
   "use strict";
 
   /* ===== Supabase connection ===== */
-  const SUPABASE_URL      = "https://twaseumqutyenzkigqtk.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_o7wmsLyi2YtA7TdqXtlgFQ_8ggqVLgQ";
+  const SUPABASE_URL      = "https://xppxtdnyuyfhviqkvwvj.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable__zE_KIYKRgOmVyD1LK4Swg_PY19bdW5";
   /* =============================== */
 
   const $ = id => document.getElementById(id);
@@ -360,12 +521,27 @@ dialog .field{margin-bottom:12px}
   let selected = new Set();
   let shownUnpaid = [];
   let payIds = [], payBulk = false;
+  let hasUpd = null;   // does the database track updated_at yet? (null = not known)
 
   /* ---------- helpers ---------- */
   const money = n => Number(n).toLocaleString("en-LK",{minimumFractionDigits:2,maximumFractionDigits:2});
   const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const r2 = n => Math.round(n * 100) / 100;
   const sum = a => r2(a.reduce((s,x) => s + x, 0));
+  const pl = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+  const normNo = s => String(s).trim().toLowerCase();
+  const touch = c => { c.updated = new Date().toISOString(); };
+  const fmtDT = iso => { const d = new Date(iso); return isNaN(d) ? "–" : d.toLocaleString("en-GB", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }); };
+  function relTime(iso){
+    const t = Date.parse(iso); if (isNaN(t)) return "";
+    const m = Math.round((Date.now() - t) / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return m + " min ago";
+    const h = Math.round(m / 60);
+    if (h < 24) return h + (h === 1 ? " hour ago" : " hours ago");
+    const d = Math.round(h / 24);
+    return d < 30 ? d + (d === 1 ? " day ago" : " days ago") : "";
+  }
 
   const ymd = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
   const today = () => ymd(new Date());
@@ -376,6 +552,7 @@ dialog .field{margin-bottom:12px}
     const tag = s === today() ? "  (Today)" : s === tomorrow() ? "  (Tomorrow)" : "";
     return s + "  " + wd + tag;
   }
+  const longDate = () => new Date().toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
 
   const paidOf = c => r2(c.cash + c.chq);
   const balOf  = c => c.status === "Paid" ? 0 : Math.max(0, r2(c.amount - paidOf(c)));
@@ -387,6 +564,11 @@ dialog .field{margin-bottom:12px}
     el.textContent = msg ? dbHint(msg) : "";
     el.classList.toggle("hidden", !msg);
   }
+  let toastT;
+  function toast(msg){
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600);
+  }
 
   const fromRow = r => {
     const amount = Number(r.amount);
@@ -394,16 +576,47 @@ dialog .field{margin-bottom:12px}
     let chq = Number(r.cheque_paid || 0);
     if (r.status === "Paid" && cash + chq === 0) chq = amount;   // older paid cheques with no payment details
     return { id:r.id, date:r.cheque_date, number:r.cheque_number, amount, supplier:r.supplier,
-             status:r.status, cash, chq, paidDate:r.paid_date || "" };
+             status:r.status, cash, chq, paidDate:r.paid_date || "", updated: r.updated_at || r.created_at || "" };
   };
   const toRow = c => ({ cheque_date:c.date, cheque_number:c.number, amount:c.amount, supplier:c.supplier, status:c.status });
+
+  /* ---------- tabs and menu ---------- */
+  const TABS = {
+    dashboard: ["Dashboard", ""],
+    cheques:   ["New Cheques", "Add a cheque, or search and update an existing one"],
+    recent:    ["Recently Updated", "Cheques that were added or changed lately, newest first"],
+    suppliers: ["Suppliers", "Create suppliers and see all of them"]
+  };
+  const openMenu  = () => { $("side").classList.add("open"); $("scrim").classList.add("show"); };
+  const closeMenu = () => { $("side").classList.remove("open"); $("scrim").classList.remove("show"); };
+  $("menuBtn").addEventListener("click", openMenu);
+  $("scrim").addEventListener("click", closeMenu);
+  $("side").addEventListener("click", e => { if (e.target.closest(".nav-item")) closeMenu(); });
+
+  function showTab(name){
+    if (!TABS[name]) name = "dashboard";
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("hidden", t.dataset.tab !== name));
+    document.querySelectorAll(".nav-item[data-tab]").forEach(b => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle("active", on);
+      if (on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+    });
+    $("pageTitle").textContent = TABS[name][0];
+    $("pageSub").textContent = name === "dashboard" ? longDate() : TABS[name][1];
+    if (location.hash !== "#" + name) { try { history.replaceState(null, "", "#" + name); } catch(e){} }
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll(".nav-item[data-tab]").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  window.addEventListener("hashchange", () => { if (!$("appView").classList.contains("hidden")) showTab(location.hash.slice(1)); });
 
   /* ---------- auth ---------- */
   function showApp(user){
     $("loginView").classList.add("hidden");
     $("appView").classList.remove("hidden");
-    $("who").textContent = user && user.email ? "Signed in as " + user.email : "";
+    $("who").textContent = user && user.email ? user.email : "";
+    $("avatar").textContent = user && user.email ? user.email.charAt(0) : "?";
     $("fDate").value = today();
+    showTab(location.hash.slice(1));
     loadAll();
   }
   function showLogin(){
@@ -439,7 +652,7 @@ dialog .field{margin-bottom:12px}
     $("sSave").disabled = false;
     if (error) { $("sMsg").textContent = error.message; return; }
     $("dlgSettings").close();
-    alert("Password updated.");
+    toast("Password updated.");
   });
 
   /* ---------- suppliers ---------- */
@@ -453,11 +666,37 @@ dialog .field{margin-bottom:12px}
   }
 
   function renderSuppliers(){
-    $("supList").innerHTML = suppliers.length
-      ? suppliers.map(s => `<span class="chip">${esc(s.name)}<button type="button" data-supdel="${s.id}" aria-label="Delete supplier ${esc(s.name)}">&times;</button></span>`).join("")
-      : `<span class="note" style="margin:0">No suppliers yet. Add your first supplier above.</span>`;
+    renderSupplierTable();
     fillSupplierSelects();
   }
+
+  function renderSupplierTable(){
+    const q = $("supSearch").value.trim().toLowerCase();
+    $("supCount").textContent = pl(suppliers.length, "supplier");
+    if (!suppliers.length) { $("supTable").innerHTML = `<div class="empty">No suppliers yet. Add your first supplier above.</div>`; return; }
+    const rows = suppliers.filter(s => !q || s.name.toLowerCase().includes(q));
+    if (!rows.length) { $("supTable").innerHTML = `<div class="empty">No supplier matches this search.</div>`; return; }
+
+    const by = {};
+    cheques.forEach(c => { if (!by[c.supplier]) by[c.supplier] = []; by[c.supplier].push(c); });
+    const body = rows.map(s => {
+      const mine = by[s.name] || [];
+      return `<tr>
+        <td class="supplier"><b>${esc(s.name)}</b></td>
+        <td class="num mono">${mine.length}</td>
+        <td class="num mono">${money(sum(mine.map(c => c.amount)))}</td>
+        <td class="num mono bal">${money(sum(mine.map(balOf)))}</td>
+        <td class="acts">
+          <button class="btn small" type="button" data-supview="${s.id}">View cheques</button>
+          <button class="btn small danger" type="button" data-supdel="${s.id}" aria-label="Delete supplier ${esc(s.name)}">Delete</button>
+        </td>
+      </tr>`;
+    }).join("");
+    $("supTable").innerHTML = `<div class="table-wrap"><table><thead><tr>
+      <th>Supplier</th><th class="num">Cheques</th><th class="num">Total amount (Rs.)</th><th class="num">Balance to pay (Rs.)</th><th></th>
+      </tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+  $("supSearch").addEventListener("input", renderSupplierTable);
 
   function allSupplierNames(){
     const used = Array.from(new Set(cheques.map(c => c.supplier))).filter(n => !suppliers.some(s => s.name === n));
@@ -491,17 +730,27 @@ dialog .field{margin-bottom:12px}
     $("sName").value = "";
     await loadSuppliers();
     $("fSup").value = name;
+    toast("Supplier added.");
   });
 
-  $("supList").addEventListener("click", async e => {
-    const b = e.target.closest("[data-supdel]"); if (!b) return;
-    const s = suppliers.find(x => x.id === b.dataset.supdel); if (!s) return;
-    const n = cheques.filter(c => c.supplier === s.name).length;
-    const msg = "Delete supplier \"" + s.name + "\"?" + (n ? "\n\nIts " + n + " existing cheque(s) will stay in the register." : "");
-    if (!confirm(msg)) return;
-    const { error } = await sb.from("suppliers").delete().eq("id", s.id);
-    if (error) { showError("Could not delete supplier: " + error.message); return; }
-    await loadSuppliers();
+  $("supTable").addEventListener("click", async e => {
+    const view = e.target.closest("[data-supview]"), del = e.target.closest("[data-supdel]");
+    if (view) {
+      const s = suppliers.find(x => x.id === view.dataset.supview); if (!s) return;
+      ["flMonth","flFrom","flTo","flSearch"].forEach(i => $(i).value = "");
+      $("flStatus").value = ""; $("flSup").value = s.name;
+      readFilter(); render(); showTab("dashboard");
+      return;
+    }
+    if (del) {
+      const s = suppliers.find(x => x.id === del.dataset.supdel); if (!s) return;
+      const n = cheques.filter(c => c.supplier === s.name).length;
+      const msg = "Delete supplier \"" + s.name + "\"?" + (n ? "\n\nIts " + pl(n, "existing cheque") + " will stay in the register." : "");
+      if (!confirm(msg)) return;
+      const { error } = await sb.from("suppliers").delete().eq("id", s.id);
+      if (error) { showError("Could not delete supplier: " + error.message); return; }
+      await loadSuppliers();
+    }
   });
 
   /* ---------- load data ---------- */
@@ -518,6 +767,7 @@ dialog .field{margin-bottom:12px}
       from += step;
     }
     cheques = all.map(fromRow);
+    hasUpd = all.length ? ("updated_at" in all[0]) : null;
     loading = false;
     fillSupplierSelects();
     render();
@@ -539,15 +789,25 @@ dialog .field{margin-bottom:12px}
     $("formTitle").textContent = "Add cheque";
     $("btnSave").textContent = "Add cheque";
     $("btnCancel").classList.add("hidden");
-    $("dupWarn").textContent = "";
+    $("dupWarn").textContent = ""; $("dupWarn").classList.remove("err");
+    $("btnSave").disabled = false;
+    renderChequeList();
   }
   $("btnCancel").addEventListener("click", resetForm);
 
-  $("fNo").addEventListener("input", () => {
+  /* a cheque number can only be used once (capital/small letters and spaces are ignored) */
+  function checkDup(){
     const n = $("fNo").value.trim();
-    const dup = n && cheques.some(c => c.number === n && c.id !== editId);
-    $("dupWarn").textContent = dup ? "This cheque number is already in the register." : "";
-  });
+    const hit = n ? cheques.find(c => normNo(c.number) === normNo(n) && c.id !== editId) : null;
+    const w = $("dupWarn");
+    w.classList.toggle("err", !!hit);
+    w.textContent = hit
+      ? "Cheque number " + hit.number + " is already in the register (" + hit.supplier + ", " + hit.date + "). Use a different number."
+      : "";
+    $("btnSave").disabled = !!hit;
+    return hit;
+  }
+  $("fNo").addEventListener("input", checkDup);
 
   $("chequeForm").addEventListener("submit", async e => {
     e.preventDefault();
@@ -559,11 +819,10 @@ dialog .field{margin-bottom:12px}
       status: $("fStatus").value
     };
     if (!rec.date || !rec.number || isNaN(rec.amount) || !rec.supplier) {
-      showError("Choose a supplier. Add one in the Suppliers section if the list is empty.");
+      showError("Choose a supplier. Add one in the Suppliers tab if the list is empty.");
       return;
     }
-    const dup = cheques.some(c => c.number === rec.number && c.id !== editId);
-    if (dup && !confirm("Cheque number " + rec.number + " already exists. Save anyway?")) return;
+    if (checkDup()) { $("fNo").focus(); return; }
 
     if (editId) {   // keep the status in line with what has already been paid
       const old = cheques.find(c => c.id === editId);
@@ -573,13 +832,21 @@ dialog .field{margin-bottom:12px}
       }
     }
 
+    const wasEdit = !!editId;
     $("btnSave").disabled = true; showError("");
     let error;
     if (editId) ({ error } = await sb.from("cheques").update(toRow(rec)).eq("id", editId));
     else        ({ error } = await sb.from("cheques").insert(toRow(rec)));
     $("btnSave").disabled = false;
-    if (error) { showError("Could not save: " + error.message); return; }
+    if (error) {
+      if (error.code === "23505") {   // the database refused a repeated cheque number
+        $("dupWarn").classList.add("err");
+        $("dupWarn").textContent = "Cheque number " + rec.number + " already exists. Use a different number.";
+      } else showError("Could not save: " + error.message);
+      return;
+    }
     resetForm(); loadAll();
+    toast(wasEdit ? "Cheque updated." : "Cheque added.");
   });
 
   function startEdit(id){
@@ -589,13 +856,15 @@ dialog .field{margin-bottom:12px}
     setFormStatus(c.status === "Paid");
     $("fDate").value = c.date; $("fNo").value = c.number; $("fAmt").value = c.amount;
     $("fSup").value = c.supplier; $("fStatus").value = c.status;
-    $("formTitle").textContent = "Edit cheque";
+    $("formTitle").textContent = "Edit cheque " + c.number;
     $("btnSave").textContent = "Save changes";
     $("btnCancel").classList.remove("hidden");
-    window.scrollTo({ top:0, behavior:"smooth" });
+    checkDup();
+    renderChequeList();
+    showTab("cheques");
   }
 
-  /* ---------- filters ---------- */
+  /* ---------- filters (dashboard) ---------- */
   $("flMonth").addEventListener("input", () => { if ($("flMonth").value){ $("flFrom").value=""; $("flTo").value=""; } });
   $("flFrom").addEventListener("input", () => { if ($("flFrom").value) $("flMonth").value=""; });
   $("flTo").addEventListener("input",   () => { if ($("flTo").value)   $("flMonth").value=""; });
@@ -625,7 +894,7 @@ dialog .field{margin-bottom:12px}
     });
   }
 
-  /* ---------- render ---------- */
+  /* ---------- render: dashboard ---------- */
   const numCmp = (a,b) => {
     const x = Number(a.number), y = Number(b.number);
     return (!isNaN(x) && !isNaN(y)) ? x - y : String(a.number).localeCompare(String(b.number));
@@ -652,7 +921,7 @@ dialog .field{margin-bottom:12px}
         <td class="num mono">${paid > 0 ? money(paid) + `<span class="sub-note">${parts.join(" · ")}</span>` : "–"}</td>
         <td class="num mono bal">${money(balOf(c))}</td>
         <td>${statusSelect(c)}</td>
-        <td style="text-align:right">
+        <td class="acts">
           <button class="btn small primary" data-pay="${c.id}">Pay</button>
           <button class="btn small" data-edit="${c.id}">Edit</button>
           <button class="btn small danger" data-del="${c.id}">Delete</button>
@@ -669,7 +938,7 @@ dialog .field{margin-bottom:12px}
         <td class="num mono">${c.chq ? money(c.chq) : "–"}</td>
         <td class="mono">${c.paidDate ? esc(c.paidDate) : "–"}</td>
         <td>${statusSelect(c)}</td>
-        <td style="text-align:right">
+        <td class="acts">
           <button class="btn small" data-edit="${c.id}">Edit</button>
           <button class="btn small danger" data-del="${c.id}">Delete</button>
         </td>
@@ -687,17 +956,20 @@ dialog .field{margin-bottom:12px}
       const meta = unpaid
         ? `Balance Rs. ${money(sum(items.map(balOf)))}`
         : `Rs. ${money(sum(items.map(c => c.amount)))}`;
-      const label = `<div class="in"><span>${esc(dayLabel(dt))}</span><span class="meta">${items.length} cheque${items.length===1?"":"s"}  ·  ${meta}</span></div>`;
+      const label = `<div class="in"><span>${esc(dayLabel(dt))}</span><span class="meta">${pl(items.length, "cheque")}  ·  ${meta}</span></div>`;
       const head = unpaid
         ? `<td class="chk-cell"><input type="checkbox" data-seldate="${dt}" aria-label="Select all cheques on ${dt}"></td><td colspan="7">${label}</td>`
         : `<td colspan="8">${label}</td>`;
       return `<tr class="date-row${cls}">${head}</tr>` +
              items.map(c => unpaid ? unpaidRow(c, isTom) : paidRow(c)).join("");
     }).join("");
-    return `<div class="table-wrap"><table>${unpaid ? THEAD_UNPAID : THEAD_PAID}<tbody>${body}</tbody></table></div>`;
+    return `<div class="table-wrap"><table class="wide">${unpaid ? THEAD_UNPAID : THEAD_PAID}<tbody>${body}</tbody></table></div>`;
   }
 
-  function stat(k, v, key){ return `<div class="stat${key ? " key" : ""}"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+  function stat(k, v, o){
+    o = o || {};
+    return `<div class="stat${o.cls ? " " + o.cls : ""}"><div class="k">${k}</div><div class="v">${v}</div>${o.sub ? `<div class="sub">${o.sub}</div>` : ""}</div>`;
+  }
 
   function renderTomorrow(){
     const tm = tomorrow();
@@ -711,7 +983,7 @@ dialog .field{margin-bottom:12px}
     }
     box.className = "tomorrow due";
     box.innerHTML = `
-      <h2>Tomorrow: ${due.length} cheque${due.length===1?"":"s"} to pay, Rs. ${money(sum(due.map(balOf)))}</h2>
+      <h2>Tomorrow: ${pl(due.length, "cheque")} to pay, Rs. ${money(sum(due.map(balOf)))}</h2>
       <div class="sub">${esc(dayLabel(tm))}</div>
       <div class="list">${due.map(c => `
         <div class="item">
@@ -727,36 +999,152 @@ dialog .field{margin-bottom:12px}
     shownUnpaid = list.filter(c => c.status !== "Paid");
     const paid = list.filter(c => c.status === "Paid");
 
-    // keep only selections that are still visible
     const visible = new Set(shownUnpaid.map(c => c.id));
     selected = new Set([...selected].filter(id => visible.has(id)));
 
     const pend = list.filter(c => c.status === "Pending");
     const hold = list.filter(c => c.status === "Hold");
     $("summary").innerHTML =
-      stat("Cheques shown", list.length) +
-      stat("Total amount (Rs.)", money(sum(list.map(c => c.amount)))) +
-      stat("Balance to pay (Rs.)", money(sum(shownUnpaid.map(balOf))), true) +
-      stat("Pending balance (Rs.)", money(sum(pend.map(balOf))) + " · " + pend.length) +
-      stat("Hold balance (Rs.)", money(sum(hold.map(balOf))) + " · " + hold.length) +
-      stat("Paid by cash (Rs.)", money(sum(list.map(c => c.cash)))) +
-      stat("Paid by cheque (Rs.)", money(sum(list.map(c => c.chq))));
+      stat("Balance to pay (Rs.)", money(sum(shownUnpaid.map(balOf))), { cls:"key", sub: pl(shownUnpaid.length, "unpaid cheque") }) +
+      stat("Pending balance (Rs.)", money(sum(pend.map(balOf))), { cls:"pending", sub: pl(pend.length, "cheque") }) +
+      stat("Hold balance (Rs.)", money(sum(hold.map(balOf))), { cls:"hold", sub: pl(hold.length, "cheque") }) +
+      stat("Total amount (Rs.)", money(sum(list.map(c => c.amount))), { sub: pl(list.length, "cheque") + " shown" }) +
+      stat("Paid by cash (Rs.)", money(sum(list.map(c => c.cash))), { cls:"paid" }) +
+      stat("Paid by cheque (Rs.)", money(sum(list.map(c => c.chq))), { cls:"paid" });
 
     const msg = t => `<div class="empty">${t}</div>`;
     if (loading) {
       $("unpaidBox").innerHTML = msg("Loading cheques…");
       $("paidBox").innerHTML = msg("Loading cheques…");
-      updateBulkBar();
+    } else {
+      $("unpaidBox").innerHTML = shownUnpaid.length
+        ? groupedTable(shownUnpaid, 1, true)
+        : msg(cheques.length ? "No unpaid cheques match this filter." : "No cheques yet. Add the first one in the New Cheques tab.");
+      $("paidBox").innerHTML = paid.length
+        ? groupedTable(paid, -1, false)
+        : msg("No paid cheques to show.");
+    }
+    updateBulkBar();
+    renderChequeList();
+    renderSupplierTable();
+    renderRecent();
+    renderBadges();
+  }
+
+  /* ---------- render: New Cheques tab list ---------- */
+  function renderChequeList(){
+    const box = $("chqListBox");
+    if (loading) { box.innerHTML = `<div class="empty">Loading cheques…</div>`; $("chqCount").textContent = ""; return; }
+    const q = $("chqSearch").value.trim().toLowerCase();
+    const list = cheques
+      .filter(c => !q || c.number.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q))
+      .sort((a,b) => b.date.localeCompare(a.date) || numCmp(a,b));
+    const LIMIT = 100, shown = list.slice(0, LIMIT);
+    $("chqCount").textContent = list.length > LIMIT
+      ? "Showing the latest " + LIMIT + " of " + pl(list.length, "cheque") + ". Use the search to find older ones."
+      : pl(list.length, "cheque");
+    if (!list.length) {
+      box.innerHTML = `<div class="empty">${cheques.length ? "No cheque matches this search." : "No cheques yet. Add the first one above."}</div>`;
       return;
     }
-    $("unpaidBox").innerHTML = shownUnpaid.length
-      ? groupedTable(shownUnpaid, 1, true)
-      : msg(cheques.length ? "No unpaid cheques match this filter." : "No cheques yet. Add the first one above.");
-    $("paidBox").innerHTML = paid.length
-      ? groupedTable(paid, -1, false)
-      : msg("No paid cheques to show.");
-    updateBulkBar();
+    const body = shown.map(c => `
+      <tr class="${c.id === editId ? "editing" : ""}">
+        <td class="mono">${esc(c.date)}</td>
+        <td class="mono">${esc(c.number)}</td>
+        <td class="supplier">${esc(c.supplier)}</td>
+        <td class="num mono">${money(c.amount)}</td>
+        <td class="num mono">${money(balOf(c))}</td>
+        <td><span class="badge ${c.status}">${c.status}</span></td>
+        <td class="acts">
+          <button class="btn small" data-edit="${c.id}">Edit</button>
+          <button class="btn small danger" data-del="${c.id}">Delete</button>
+        </td>
+      </tr>`).join("");
+    box.innerHTML = `<div class="table-wrap"><table><thead><tr>
+      <th>Date</th><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th class="num">Balance (Rs.)</th><th>Status</th><th></th>
+      </tr></thead><tbody>${body}</tbody></table></div>`;
   }
+  $("chqSearch").addEventListener("input", renderChequeList);
+
+  /* ---------- render: Recently Updated tab ---------- */
+  function renderRecent(){
+    const box = $("recBox");
+    const hint = $("recHint");
+    hint.classList.toggle("hidden", hasUpd !== false);
+    if (hasUpd === false) hint.textContent = "Update times are not being tracked yet. Run supabase-all-in-one.sql again in the Supabase SQL Editor. Until then this list is sorted by the time each cheque was added.";
+    if (loading) { box.innerHTML = `<div class="empty">Loading cheques…</div>`; $("recCount").textContent = ""; return; }
+
+    const days = Number($("recRange").value);
+    const q = $("recSearch").value.trim().toLowerCase();
+    const since = days ? Date.now() - days * 86400000 : 0;
+    const ts = c => Date.parse(c.updated) || 0;
+    const list = cheques
+      .filter(c => (!since || ts(c) >= since) && (!q || c.number.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q)))
+      .sort((a,b) => ts(b) - ts(a));
+    const LIMIT = 100, shown = list.slice(0, LIMIT);
+    $("recCount").textContent = list.length > LIMIT
+      ? "Showing the latest " + LIMIT + " of " + pl(list.length, "cheque") + "."
+      : pl(list.length, "cheque");
+    if (!list.length) {
+      box.innerHTML = `<div class="empty">${cheques.length ? "Nothing was updated in this period. Try All time." : "No cheques yet."}</div>`;
+      return;
+    }
+    const body = shown.map(c => {
+      const rel = relTime(c.updated);
+      return `<tr>
+        <td class="when">${esc(fmtDT(c.updated))}${rel ? `<span class="sub-note">${rel}</span>` : ""}</td>
+        <td class="mono">${esc(c.number)}</td>
+        <td class="mono">${esc(c.date)}</td>
+        <td class="supplier">${esc(c.supplier)}</td>
+        <td class="num mono">${money(c.amount)}</td>
+        <td class="num mono">${money(paidOf(c))}</td>
+        <td><span class="badge ${c.status}">${c.status}</span></td>
+        <td class="acts"><button class="btn small" data-edit="${c.id}">Edit</button></td>
+      </tr>`;
+    }).join("");
+    box.innerHTML = `<div class="table-wrap"><table class="wide"><thead><tr>
+      <th>Last updated</th><th>Cheque no.</th><th>Cheque date</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th class="num">Paid (Rs.)</th><th>Status</th><th></th>
+      </tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+  $("recRange").addEventListener("change", renderRecent);
+  $("recSearch").addEventListener("input", renderRecent);
+
+  /* ---------- menu badges ---------- */
+  function renderBadges(){
+    const unpaid = cheques.filter(c => c.status !== "Paid").length;
+    const startToday = new Date(); startToday.setHours(0,0,0,0);
+    const updToday = hasUpd === false ? 0 : cheques.filter(c => (Date.parse(c.updated) || 0) >= startToday.getTime()).length;
+    $("nbDash").textContent = unpaid || "";
+    $("nbRecent").textContent = updToday || "";
+    $("nbSup").textContent = suppliers.length || "";
+  }
+
+  /* ---------- quick find (left menu) ---------- */
+  const qs = $("quickSearch"), qsBox = $("qsResults");
+  let qsHits = [];
+  function qsRender(){
+    const q = qs.value.trim().toLowerCase();
+    if (!q) { qsBox.classList.add("hidden"); qsHits = []; return; }
+    qsHits = cheques
+      .filter(c => c.number.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q))
+      .sort((a,b) => b.date.localeCompare(a.date)).slice(0, 6);
+    qsBox.innerHTML = qsHits.length
+      ? qsHits.map(c => `<button type="button" class="qs-item" data-qs="${c.id}"><b>${esc(c.number)}</b> · ${esc(c.supplier)}<br><span class="muted">${esc(c.date)} · Rs. ${money(c.amount)} · ${c.status}</span></button>`).join("")
+      : `<div class="qs-empty">No cheque found.</div>`;
+    qsBox.classList.remove("hidden");
+  }
+  function qsOpen(id){
+    qs.value = ""; qsBox.classList.add("hidden"); qsHits = [];
+    closeMenu(); startEdit(id);
+  }
+  qs.addEventListener("input", qsRender);
+  qs.addEventListener("focus", qsRender);
+  qs.addEventListener("keydown", e => {
+    if (e.key === "Escape") { qs.value = ""; qsBox.classList.add("hidden"); }
+    if (e.key === "Enter" && qsHits.length) { e.preventDefault(); qsOpen(qsHits[0].id); }
+  });
+  qsBox.addEventListener("click", e => { const b = e.target.closest("[data-qs]"); if (b) qsOpen(b.dataset.qs); });
+  document.addEventListener("click", e => { if (!e.target.closest(".side-search")) qsBox.classList.add("hidden"); });
 
   /* ---------- selection / bulk bar ---------- */
   function updateBulkBar(){
@@ -791,8 +1179,8 @@ dialog .field{margin-bottom:12px}
     openPay(ids, true);
   });
 
-  /* ---------- row actions ---------- */
-  $("lists").addEventListener("click", async e => {
+  /* ---------- row actions (dashboard lists and New Cheques list) ---------- */
+  async function rowClick(e){
     const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]"), pay = e.target.closest("[data-pay]");
     if (pay) openPay([pay.dataset.pay], false);
     if (ed) startEdit(ed.dataset.edit);
@@ -801,10 +1189,16 @@ dialog .field{margin-bottom:12px}
       if (c && confirm("Delete cheque " + c.number + " (" + c.supplier + ")?")) {
         const { error } = await sb.from("cheques").delete().eq("id", c.id);
         if (error) { showError("Could not delete: " + error.message); return; }
-        cheques = cheques.filter(x => x.id !== c.id); render();
+        cheques = cheques.filter(x => x.id !== c.id);
+        if (editId === c.id) resetForm();
+        render();
+        toast("Cheque deleted.");
       }
     }
-  });
+  }
+  $("lists").addEventListener("click", rowClick);
+  $("chqListBox").addEventListener("click", rowClick);
+  $("recBox").addEventListener("click", rowClick);
 
   $("lists").addEventListener("change", async e => {
     const one = e.target.closest("[data-sel]");
@@ -829,7 +1223,8 @@ dialog .field{margin-bottom:12px}
     const { error } = await sb.from("cheques").update(patch).eq("id", c.id);
     if (error) { showError("Could not update status: " + error.message); render(); return; }
     c.status = next;
-    if (c.status !== "Paid" && "cash_paid" in patch) { c.cash = 0; c.chq = 0; c.paidDate = ""; }
+    if ("cash_paid" in patch) { c.cash = 0; c.chq = 0; c.paidDate = ""; }
+    touch(c);
     render();
   });
 
@@ -902,6 +1297,7 @@ dialog .field{margin-bottom:12px}
       const amt = r2(parseFloat($("payAmt").value));
       const bal = balOf(c);
       if (isNaN(amt) || amt <= 0 || amt > bal + 0.001) {
+        $("payMsg").classList.add("err");
         $("payMsg").textContent = "Enter an amount between 0.01 and " + money(bal) + ".";
         $("paySave").disabled = false; return;
       }
@@ -918,18 +1314,19 @@ dialog .field{margin-bottom:12px}
       if (bad) { failed = bad.error; break; }
       jobs.slice(i, i + 10).forEach(j => {
         j.c.cash = j.patch.cash_paid; j.c.chq = j.patch.cheque_paid;
-        j.c.paidDate = j.patch.paid_date; j.c.status = j.patch.status;
+        j.c.paidDate = j.patch.paid_date; j.c.status = j.patch.status; touch(j.c);
       });
     }
     $("paySave").disabled = false;
     if (failed) {
-      render();   // show anything that did save
+      render();
       $("payMsg").classList.add("err");
       $("payMsg").textContent = "Could not save payment: " + dbHint(failed.message);
-      return;     // keep the box open so the message can be read
+      return;
     }
     $("dlgPay").close();
     render();
+    toast("Payment saved.");
   });
 
   /* ---------- export to Excel ---------- */
@@ -940,8 +1337,7 @@ dialog .field{margin-bottom:12px}
     ).sort((a,b) => a.date.localeCompare(b.date) || numCmp(a,b));
   }
   function updateExCount(){
-    const n = exportList().length;
-    $("exCount").textContent = n + " cheque" + (n === 1 ? "" : "s") + " will be exported.";
+    $("exCount").textContent = pl(exportList().length, "cheque") + " will be exported.";
   }
   $("btnExport").addEventListener("click", () => {
     $("exSup").innerHTML = `<option value="">All suppliers</option>` + allSupplierNames().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
@@ -1019,17 +1415,17 @@ dialog .field{margin-bottom:12px}
         const data = JSON.parse(r.result);
         if (!Array.isArray(data) || !data.every(c => c && c.date && c.number !== undefined && c.supplier !== undefined && !isNaN(c.amount)))
           throw new Error("bad");
-        const key = c => [c.date, String(c.number), String(c.supplier).toLowerCase(), Number(c.amount).toFixed(2)].join("|");
-        const have = new Set(cheques.map(key));
-        const fresh = data.filter(c => !have.has(key(c))).map(c => {
+        const have = new Set(cheques.map(c => normNo(c.number)));
+        const fresh = data.filter(c => { const k = normNo(c.number); if (have.has(k)) return false; have.add(k); return true; }).map(c => {
           const amount = Number(c.amount), status = STATUSES.includes(c.status) ? c.status : "Pending";
           const cash = Number(c.cash || 0); let chq = Number(c.chq || 0);
           if (status === "Paid" && cash + chq === 0) chq = amount;
           return { date:String(c.date), number:String(c.number), amount, supplier:String(c.supplier).trim(),
                    status, cash, chq, paidDate: c.paidDate || null };
         });
-        if (!fresh.length) { alert("Nothing new to import. All cheques in this file already exist."); return; }
-        if (!confirm("Add " + fresh.length + " new cheques from this file? Existing cheques are kept.")) return;
+        const skipped = data.length - fresh.length;
+        if (!fresh.length) { alert("Nothing new to import. All cheque numbers in this file already exist."); return; }
+        if (!confirm("Add " + fresh.length + " new cheques from this file?" + (skipped ? "\n\n" + pl(skipped, "cheque") + " with an existing cheque number will be skipped." : "") + "\nExisting cheques are kept.")) return;
 
         const known = new Set(suppliers.map(s => s.name.toLowerCase()));
         const newSup = [];
@@ -1051,9 +1447,11 @@ dialog .field{margin-bottom:12px}
     r.readAsText(f);
   });
 
-  /* refresh "tomorrow" when the day changes while the page stays open */
+  /* refresh "tomorrow" and the date when the day changes while the page stays open */
   let lastDay = today();
-  setInterval(() => { if (today() !== lastDay) { lastDay = today(); render(); } }, 60000);
+  setInterval(() => {
+    if (today() !== lastDay) { lastDay = today(); render(); if (!location.hash || location.hash === "#dashboard") $("pageSub").textContent = longDate(); }
+  }, 60000);
 })();
 </script>
 </body>

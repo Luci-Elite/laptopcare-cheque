@@ -18,6 +18,7 @@
   --hold:#a3221a; --hold-bg:#f5c6c2; --hold-row:#fdeceb;
   --paid:#1c7a40; --paid-bg:#dcf1e4;
   --warn:#a45f00; --warn-bg:#fbebd0;
+  --stop:#4b3a8f; --stop-bg:#e6e1f5;
   --danger:#b3261e;
   --alert-bg:#c62828; --alert-ink:#ffffff;
   --shadow:0 1px 2px rgba(15,40,48,.06);
@@ -33,6 +34,7 @@
     --hold:#ffa39b; --hold-bg:#6b2a28; --hold-row:#3a1f20;
     --paid:#7fd9a0; --paid-bg:#17402a;
     --warn:#f0b45a; --warn-bg:#473213;
+    --stop:#c9bcf5; --stop-bg:#352b63;
     --danger:#ff8a80;
     --alert-bg:#a52121; --alert-ink:#ffffff;
     --shadow:none;
@@ -122,6 +124,7 @@ input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;accent-color:
 .stat.pending{border-left-color:var(--pending)}
 .stat.hold{border-left-color:var(--hold)}
 .stat.paid{border-left-color:var(--paid)}
+.stat.stop{border-left-color:var(--stop)}
 
 /* ---------- bulk bar ---------- */
 .bulk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
@@ -158,16 +161,20 @@ tr.date-row.tomorrow-row .meta{color:var(--alert-ink);opacity:.9}
 tr.row-Hold td{background:var(--hold-row)}
 tr.row-Hold:hover td{background:color-mix(in srgb,var(--hold-bg) 55%,var(--hold-row))}
 tr.row-Paid td.mono,tr.row-Paid td.supplier{color:var(--muted)}
+tr.row-Stop td:first-child{text-decoration:line-through;color:var(--muted)}
+tr.row-Stop td.supplier{color:var(--muted)}
 tr.tom td:first-child{box-shadow:inset 4px 0 0 var(--alert-bg)}
 
 td select{width:auto;min-height:32px;padding:4px 8px;font-size:13px;font-weight:500}
 td select.Pending{background:var(--pending-bg);color:var(--pending)}
 td select.Hold{background:var(--hold-bg);color:var(--hold)}
 td select.Paid{background:var(--paid-bg);color:var(--paid)}
+td select.Stop{background:var(--stop-bg);color:var(--stop)}
 .badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:500}
 .badge.Pending{background:var(--pending-bg);color:var(--pending)}
 .badge.Hold{background:var(--hold-bg);color:var(--hold)}
 .badge.Paid{background:var(--paid-bg);color:var(--paid)}
+.badge.Stop{background:var(--stop-bg);color:var(--stop)}
 
 .empty{padding:28px;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:6px}
 .note{font-size:13px;color:var(--muted);margin:10px 0 0}
@@ -209,6 +216,43 @@ dialog .field{margin-bottom:12px}
 .head-tools{display:flex;gap:8px;flex-wrap:wrap}
 td.when{white-space:nowrap}
 td.when .sub-note{margin-top:1px}
+
+/* ---------- stop letter tab ---------- */
+tr.pick{cursor:pointer}
+tr.picked td{background:color-mix(in srgb,var(--accent) 13%,var(--panel))}
+tr.pick.is-stop td.mono:nth-child(3){text-decoration:line-through}
+details.card > summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+details.card > summary::-webkit-details-marker{display:none}
+details.card > summary h2{margin:0;font-size:16px;font-weight:600}
+details.card > summary::after{content:"Show details";color:var(--accent);font-size:13px;font-weight:500}
+details.card[open] > summary{margin-bottom:14px}
+details.card[open] > summary::after{content:"Hide"}
+.ls-grid .wide{grid-column:1 / -1}
+.paper-wrap{background:color-mix(in srgb,var(--bg) 70%,var(--line));border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:16px;justify-items:center;overflow:hidden}
+.paper-wrap .empty{background:var(--panel);width:100%}
+.sheet-box{position:relative;min-height:60px}
+.sheet-box .sheet{position:absolute;left:0;top:0;transform-origin:top left}
+.sheet{width:210mm;min-height:297mm;padding:19mm 25.4mm 25.4mm;box-sizing:border-box;background:#fff;color:#000;font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;font-size:12pt;line-height:1.3;box-shadow:0 1px 8px rgba(0,0,0,.3)}
+.sheet p{margin:0 0 8pt}
+.sheet b{font-weight:700}
+.sheet .lh{text-align:center}
+.sheet .lh img{display:block;width:3in;height:auto;margin:0 auto 6pt}
+.sheet .lh p{font:10pt/1.15 "Times New Roman",Times,serif;margin:0 0 .5pt}
+.sheet .lh p:last-child{margin-bottom:42pt}
+.sheet .lnk{color:#1155cc;text-decoration:underline}
+.sheet ul{margin:0 0 8pt;padding-left:.5in}
+.sheet li{margin:0 0 8pt}
+.sheet .gap{height:1.3em}
+.sheet .missing{color:#c62828}
+#printRoot{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff !important}
+  body.printing > *:not(#printRoot){display:none !important}
+  body.printing #printRoot{display:block}
+  #printRoot .sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}
+  #printRoot .sheet:last-child{break-after:auto;page-break-after:auto}
+}
 
 /* ---------- small screens: menu becomes a slide-in drawer ---------- */
 @media (max-width:900px){
@@ -276,6 +320,10 @@ td.when .sub-note{margin-top:1px}
         <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         Recently Updated <span class="badge-n" id="nbRecent" title="Updated today"></span>
       </button>
+      <button class="nav-item" data-tab="stop" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 12.5l5 5M14.5 12.5l-5 5"/></svg>
+        Stop Letter <span class="badge-n" id="nbStop" title="Stopped cheques"></span>
+      </button>
 
       <div class="nav-label">Manage</div>
       <button class="nav-item" data-tab="suppliers" type="button">
@@ -320,7 +368,7 @@ td.when .sub-note{margin-top:1px}
           <div><label for="flSup">Supplier</label><select id="flSup"></select></div>
           <div>
             <label for="flStatus">Status</label>
-            <select id="flStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option></select>
+            <select id="flStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option><option>Stop</option></select>
           </div>
           <div><label for="flSearch">Cheque no. search</label><input id="flSearch" placeholder="Search" autocomplete="off"></div>
           <div class="row-btns">
@@ -347,6 +395,12 @@ td.when .sub-note{margin-top:1px}
           <div class="card-head"><h2>Paid cheques</h2></div>
           <div id="paidBox"></div>
           <p class="note">Grouped by date, latest first.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Stopped cheques</h2></div>
+          <div id="stopBox"></div>
+          <p class="note">Cheques whose payment was stopped at the bank. They are not counted in the balance to pay. Press Letter to make the bank letter again.</p>
         </section>
       </div>
     </div>
@@ -406,6 +460,58 @@ td.when .sub-note{margin-top:1px}
       </section>
     </div>
 
+    <!-- ===== TAB: STOP LETTER ===== -->
+    <div class="tab hidden" data-tab="stop">
+      <section class="card">
+        <div class="card-head">
+          <div><h2>1. Choose the cheques to stop</h2><span class="count" id="stopCount"></span></div>
+          <div class="head-tools">
+            <select id="stopSup" aria-label="Supplier"></select>
+            <input id="stopSearch" placeholder="Search cheque no. or supplier" autocomplete="off" aria-label="Search cheques">
+          </div>
+        </div>
+        <div class="bulk">
+          <label class="chk"><input type="checkbox" id="stopAll"> Select all shown</label>
+          <span class="info" id="stopInfo">Click a cheque to add it to the letter.</span>
+          <button class="btn small" id="stopClear" type="button">Clear selection</button>
+        </div>
+        <div id="stopListBox"></div>
+        <p class="note">Paid cheques are not listed. One letter is made for each payee (supplier), each on its own page.</p>
+      </section>
+
+      <details class="card" id="lsDetails">
+        <summary><h2>2. Letter details</h2></summary>
+        <div class="grid ls-grid">
+          <div><label for="lsBank">Bank</label><input id="lsBank" autocomplete="off"></div>
+          <div><label for="lsAccNo">Account number</label><input id="lsAccNo" inputmode="numeric" autocomplete="off"></div>
+          <div><label for="lsAccName">Account name</label><input id="lsAccName" autocomplete="off"></div>
+          <div><label for="lsCompany">Company name (From and signature)</label><input id="lsCompany" autocomplete="off"></div>
+          <div class="wide"><label for="lsAddress">Company address</label><input id="lsAddress" autocomplete="off"></div>
+          <div class="wide"><label for="lsReason">Reason (the letter says "due to the ...")</label><input id="lsReason" autocomplete="off"></div>
+          <div class="wide"><label for="lsHead1">Letterhead line 1</label><input id="lsHead1" autocomplete="off"></div>
+          <div class="wide"><label for="lsHead2">Letterhead line 2</label><input id="lsHead2" autocomplete="off"></div>
+          <div class="wide"><label for="lsHead3">Letterhead line 3</label><input id="lsHead3" autocomplete="off"></div>
+        </div>
+        <div class="row-btns" style="margin-top:12px"><button class="btn primary" id="lsSave" type="button">Save details</button></div>
+        <div class="warn" id="lsMsg" role="status"></div>
+        <p class="note" style="margin-top:0">Saved in your database and used for every letter. Type the account number once, then press Save details.</p>
+      </details>
+
+      <section class="card">
+        <div class="card-head">
+          <div><h2>3. Letter</h2><span class="count" id="letterCount"></span></div>
+          <div style="min-width:170px"><label for="lsDate">Letter date</label><input type="date" id="lsDate"></div>
+        </div>
+        <div class="bulk">
+          <label class="chk"><input type="checkbox" id="lsMark" checked> Mark these cheques as Stop</label>
+          <span class="info" id="lsHint"></span>
+          <button class="btn primary small" id="lsWord" type="button" disabled>Download Word (.docx)</button>
+          <button class="btn small" id="lsPrint" type="button" disabled>Print / Save as PDF</button>
+        </div>
+        <div class="paper-wrap" id="paperWrap"><div id="letterPreview"></div></div>
+      </section>
+    </div>
+
     <!-- ===== TAB: SUPPLIERS ===== -->
     <div class="tab hidden" data-tab="suppliers">
       <section class="card">
@@ -429,6 +535,7 @@ td.when .sub-note{margin-top:1px}
   </div>
 </div>
 
+<div id="printRoot" aria-hidden="true"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- change password dialog -->
@@ -475,7 +582,7 @@ td.when .sub-note{margin-top:1px}
     <div class="field"><label for="exSup">Supplier</label><select id="exSup"></select></div>
     <div class="field">
       <label for="exStatus">Status</label>
-      <select id="exStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option></select>
+      <select id="exStatus"><option value="">All</option><option>Pending</option><option>Hold</option><option>Paid</option><option>Stop</option></select>
     </div>
     <p class="note" style="margin-top:0">Leave the dates empty to export every date.</p>
     <div class="warn" id="exCount" role="status"></div>
@@ -496,7 +603,7 @@ td.when .sub-note{margin-top:1px}
   /* =============================== */
 
   const $ = id => document.getElementById(id);
-  const STATUSES = ["Pending","Hold","Paid"];
+  const STATUSES = ["Pending","Hold","Paid","Stop"];
   const configured = /^https:\/\/.+\.supabase\.co/.test(SUPABASE_URL) && !SUPABASE_ANON_KEY.startsWith("PASTE");
   const libReady = !!(window.supabase && window.supabase.createClient);
 
@@ -511,6 +618,188 @@ td.when .sub-note{margin-top:1px}
   }
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ===== Stop payment letter: text model, HTML (preview/print) and Word (.docx) ===== */
+  const LETTER_DEFAULTS = {
+    bank: "Commercial Bank",
+    accNo: "",
+    accName: "Laptopcare Pvt Ltd.",
+    company: "Laptopcare Pvt Ltd",
+    address: "No. 3-26 / 3rd Floor, Majestic City, Colombo 04.",
+    reason: "Goods Return Process",
+    head1: "NO -3-26| MajesticCity | Colombo-04 | Sri Lanka.",
+    head2: "Tel: 0776786786 | Fax: 011 – 3566890",
+    head3: "E-mail:rilwan@laptopstore.lk | Web: www.Laptopcare.lk"
+  };
+  const NO_ACC = "[enter account number]";
+  
+  const fmtDMY = iso => { const p = String(iso).split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : String(iso); };
+  const fmtRs = n => {
+    const whole = Math.abs(n - Math.round(n)) < 0.005;
+    const t = whole ? Math.round(n).toLocaleString("en-US")
+                    : Number(n).toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
+    return "Rs. " + t + "/-";
+  };
+  
+  /* one letter = one payee (supplier) and the cheques to stop for that payee */
+  function letterModel(st, dateISO, payee, items){
+    const many = items.length > 1;
+    return {
+      head: [st.head1, st.head2, st.head3],
+      date: fmtDMY(dateISO),
+      bank: st.bank,
+      from: [st.company, st.address],
+      subject: "Subject: Notice to Stop Payment of Cheques",
+      accNo: st.accNo, accName: st.accName,
+      reason: (st.reason || "").trim(),
+      many,
+      items: items.map(c => ({ no: c.number, date: fmtDMY(c.date), amt: fmtRs(c.amount) })),
+      payee,
+      closing1: many
+        ? "We kindly request that you stop payment on all the above cheques and inform us immediately upon their receipt and dishonour when presented."
+        : "We kindly request that you stop payment on the above cheque and inform us immediately upon its receipt and dishonour when presented.",
+      closing2: "Thank you for your prompt assistance.",
+      sign: st.company
+    };
+  }
+  
+  /* ---------- HTML ---------- */
+  const hx = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  function headLinkHTML(s){ return hx(s).replace(/(www\.[^\s|]+)/i, '<span class="lnk">$1</span>'); }
+  
+  function letterHTML(m, logoSrc){
+    const acc = m.accNo ? hx(m.accNo) : `<span class="missing">${NO_ACC}</span>`;
+    return `<div class="sheet">
+      <div class="lh">
+        <img src="${logoSrc}" alt="Laptopcare">
+        <p>${hx(m.head[0])}</p><p>${hx(m.head[1])}</p><p>${headLinkHTML(m.head[2])}</p>
+      </div>
+      <p>Date: ${hx(m.date)}</p>
+      <p>Manager<br>${hx(m.bank)}</p>
+      <p><b>From,</b><br>${hx(m.from[0])}<br>${hx(m.from[1])}</p>
+      <p><b>${hx(m.subject)}</b></p>
+      <p><b>Account Number:</b> ${acc}<br><b>Account Name:</b> ${hx(m.accName)}</p>
+      <p>Dear Sir,</p>
+      <p>This letter is to request you to <b>stop payment</b> of the following ${m.many ? "cheques" : "cheque"}${m.reason ? " due to the <b>" + hx(m.reason) + "</b>" : ""}:</p>
+      <ul>${m.items.map(i => `<li><b>Cheque No: ${hx(i.no)}</b> – Date: <b>${hx(i.date)}</b> – Amount: <b>${hx(i.amt)}</b></li>`).join("")}</ul>
+      <p>Payee Name: ${hx(m.payee)}</p>
+      <p>${hx(m.closing1)}</p>
+      <p>${hx(m.closing2)}</p>
+      <p class="gap">&nbsp;</p>
+      <p>Yours faithfully,<br><b>${hx(m.sign)}</b></p>
+    </div>`;
+  }
+  
+  /* ---------- Word (.docx), built by hand and zipped without any library ---------- */
+  const xe = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  function wr(text, o){
+    o = o || {};
+    let p = "";
+    if (o.font) p += `<w:rFonts w:ascii="${o.font}" w:eastAsia="${o.font}" w:hAnsi="${o.font}" w:cs="${o.font}"/>`;
+    if (o.b) p += "<w:b/><w:bCs/>";
+    if (o.color) p += `<w:color w:val="${o.color}"/>`;
+    p += `<w:sz w:val="${o.sz || 24}"/><w:szCs w:val="${o.sz || 24}"/>`;
+    if (o.u) p += '<w:u w:val="single"/>';
+    return `<w:r><w:rPr>${p}</w:rPr><w:t xml:space="preserve">${xe(text)}</w:t></w:r>`;
+  }
+  const wbr = () => "<w:r><w:br/></w:r>";
+  function wp(runs, o){
+    o = o || {};
+    let p = "";
+    if (o.pageBreak) p += "<w:pageBreakBefore/>";
+    if (o.bullet) p += '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>';
+    if (o.after !== undefined) p += `<w:spacing w:after="${o.after}"/>`;
+    if (o.jc) p += `<w:jc w:val="${o.jc}"/>`;
+    if (o.markSz) p += `<w:rPr><w:sz w:val="${o.markSz}"/><w:szCs w:val="${o.markSz}"/></w:rPr>`;
+    return `<w:p>${p ? "<w:pPr>" + p + "</w:pPr>" : ""}${runs}</w:p>`;
+  }
+  function wLogo(id){
+    const cx = 2743200, cy = 328725;
+    return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="Laptopcare logo" descr="Laptopcare"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id}" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId3"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  }
+  function headLinkRuns(s){
+    const TNR = { font:"Times New Roman", sz:20 };
+    const m = /(www\.[^\s|]+)/i.exec(s);
+    if (!m) return wr(s, TNR);
+    return wr(s.slice(0, m.index), TNR) + wr(m[1], { font:"Times New Roman", sz:20, color:"1155CC", u:true }) + wr(s.slice(m.index + m[1].length), TNR);
+  }
+  function letterXML(m, n){
+    const T = { font:"Times New Roman", sz:20 };
+    const out = [];
+    out.push(wp(wLogo(n + 1), { jc:"center", after:120, pageBreak: n > 0 }));
+    out.push(wp(wr(m.head[0], T), { jc:"center", after:10 }));
+    out.push(wp(wr(m.head[1], T), { jc:"center", after:10 }));
+    out.push(wp(headLinkRuns(m.head[2]), { jc:"center", after:850 }));
+    out.push(wp(wr("Date: " + m.date)));
+    out.push(wp(wr("Manager") + wbr() + wr(m.bank)));
+    out.push(wp(wr("From,", { b:true }) + wbr() + wr(m.from[0]) + wbr() + wr(m.from[1])));
+    out.push(wp(wr(m.subject, { b:true })));
+    out.push(wp(wr("Account Number:", { b:true }) + wr(" ") + (m.accNo ? wr(m.accNo) : wr(NO_ACC, { color:"C62828" })) + wbr() + wr("Account Name:", { b:true }) + wr(" " + m.accName)));
+    out.push(wp(wr("Dear Sir,")));
+    out.push(wp(wr("This letter is to request you to ") + wr("stop payment", { b:true }) + wr(" of the following " + (m.many ? "cheques" : "cheque")) +
+      (m.reason ? wr(" due to the ") + wr(m.reason, { b:true }) : "") + wr(":")));
+    m.items.forEach(i => out.push(wp(wr("Cheque No: " + i.no, { b:true }) + wr(" – Date: ") + wr(i.date, { b:true }) + wr(" – Amount: ") + wr(i.amt, { b:true }), { bullet:true })));
+    out.push(wp(wr("Payee Name: " + m.payee)));
+    out.push(wp(wr(m.closing1)));
+    out.push(wp(wr(m.closing2)));
+    out.push(wp("", { markSz:24 }));
+    out.push(wp(wr("Yours faithfully,") + wbr() + wr(m.sign, { b:true })));
+    return out.join("");
+  }
+  
+  function docxFiles(models, logoBytes){
+    const enc = new TextEncoder();
+    const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+    const HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    const doc = HEAD + `<w:document ${NS}><w:body>${models.map((m, n) => letterXML(m, n)).join("")}<w:sectPr><w:pgSz w:w="11900" w:h="16820"/><w:pgMar w:top="1080" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+    const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+    const styles = HEAD + `<w:styles ${W}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:eastAsia="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="en-GB" w:eastAsia="en-US" w:bidi="ar-SA"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="259" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:rPr><w:color w:val="000000"/></w:rPr></w:style></w:styles>`;
+    const numbering = HEAD + `<w:numbering ${W}><w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="hybridMultilevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="&#xF0B7;"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr><w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol" w:hint="default"/></w:rPr></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>`;
+    const types = HEAD + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/></Types>';
+    const RELNS = 'xmlns="http://schemas.openxmlformats.org/package/2006/relationships"';
+    const RT = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/";
+    const rels = HEAD + `<Relationships ${RELNS}><Relationship Id="rId1" Type="${RT}officeDocument" Target="word/document.xml"/></Relationships>`;
+    const docRels = HEAD + `<Relationships ${RELNS}><Relationship Id="rId1" Type="${RT}styles" Target="styles.xml"/><Relationship Id="rId2" Type="${RT}numbering" Target="numbering.xml"/><Relationship Id="rId3" Type="${RT}image" Target="media/logo.png"/></Relationships>`;
+    return [
+      { name:"[Content_Types].xml", data: enc.encode(types) },
+      { name:"_rels/.rels", data: enc.encode(rels) },
+      { name:"word/document.xml", data: enc.encode(doc) },
+      { name:"word/styles.xml", data: enc.encode(styles) },
+      { name:"word/numbering.xml", data: enc.encode(numbering) },
+      { name:"word/_rels/document.xml.rels", data: enc.encode(docRels) },
+      { name:"word/media/logo.png", data: logoBytes }
+    ];
+  }
+  
+  /* minimal zip writer (no compression) so no library is needed */
+  const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(u8){ let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function makeZip(files){
+    const enc = new TextEncoder(), chunks = [], central = [];
+    let offset = 0;
+    files.forEach(f => {
+      const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      const lh = new Uint8Array(30 + name.length), lv = new DataView(lh.buffer);
+      lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true);
+      lv.setUint16(8, 0, true); lv.setUint16(10, 0, true); lv.setUint16(12, 33, true);
+      lv.setUint32(14, crc, true); lv.setUint32(18, size, true); lv.setUint32(22, size, true);
+      lv.setUint16(26, name.length, true); lv.setUint16(28, 0, true); lh.set(name, 30);
+      const ch = new Uint8Array(46 + name.length), cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, 0, true); cv.setUint16(12, 0, true); cv.setUint16(14, 33, true);
+      cv.setUint32(16, crc, true); cv.setUint32(20, size, true); cv.setUint32(24, size, true);
+      cv.setUint16(28, name.length, true); cv.setUint32(42, offset, true); ch.set(name, 46);
+      chunks.push(lh, f.data); central.push(ch); offset += lh.length + size;
+    });
+    const cdSize = central.reduce((s, c) => s + c.length, 0);
+    const end = new Uint8Array(22), ev = new DataView(end.buffer);
+    ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+    ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true);
+    return new Blob([...chunks, ...central, end], { type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  }
+  const b64ToBytes = b64 => { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+  const LOGO_B64 = "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";
+  const LOGO_SRC = "data:image/png;base64," + LOGO_B64;
 
   /* ---------- state ---------- */
   let cheques = [];
@@ -555,10 +844,14 @@ td.when .sub-note{margin-top:1px}
   const longDate = () => new Date().toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
 
   const paidOf = c => r2(c.cash + c.chq);
-  const balOf  = c => c.status === "Paid" ? 0 : Math.max(0, r2(c.amount - paidOf(c)));
+  const dueOf  = c => Math.max(0, r2(c.amount - paidOf(c)));                 // still unpaid, whatever the status
+  const balOf  = c => (c.status === "Paid" || c.status === "Stop") ? 0 : dueOf(c);   // still to pay (a stopped cheque is not paid)
+  const isOpen = c => c.status === "Pending" || c.status === "Hold";
 
   const dbHint = m => /cash_paid|cheque_paid|paid_date/.test(m || "")
-    ? m + " (Run supabase-all-in-one.sql again in the Supabase SQL Editor to add the payment columns.)" : m;
+    ? m + " (Run supabase-all-in-one.sql again in the Supabase SQL Editor to add the payment columns.)"
+    : /cheques_status_check/.test(m || "")
+      ? m + " (Run supabase-all-in-one.sql again in the Supabase SQL Editor so the Stop status is allowed.)" : m;
   function showError(msg){
     const el = $("appErr");
     el.textContent = msg ? dbHint(msg) : "";
@@ -585,6 +878,7 @@ td.when .sub-note{margin-top:1px}
     dashboard: ["Dashboard", ""],
     cheques:   ["New Cheques", "Add a cheque, or search and update an existing one"],
     recent:    ["Recently Updated", "Cheques that were added or changed lately, newest first"],
+    stop:      ["Stop Letter", "Pick the cheques to stop and the bank letter is made for you"],
     suppliers: ["Suppliers", "Create suppliers and see all of them"]
   };
   const openMenu  = () => { $("side").classList.add("open"); $("scrim").classList.add("show"); };
@@ -603,6 +897,7 @@ td.when .sub-note{margin-top:1px}
     });
     $("pageTitle").textContent = TABS[name][0];
     $("pageSub").textContent = name === "dashboard" ? longDate() : TABS[name][1];
+    if (name === "stop") requestAnimationFrame(fitSheets);
     if (location.hash !== "#" + name) { try { history.replaceState(null, "", "#" + name); } catch(e){} }
     window.scrollTo(0, 0);
   }
@@ -616,8 +911,11 @@ td.when .sub-note{margin-top:1px}
     $("who").textContent = user && user.email ? user.email : "";
     $("avatar").textContent = user && user.email ? user.email.charAt(0) : "?";
     $("fDate").value = today();
+    $("lsDate").value = today();
+    fillLetterInputs();
     showTab(location.hash.slice(1));
     loadAll();
+    loadLetterSettings();
   }
   function showLogin(){
     $("appView").classList.add("hidden");
@@ -774,15 +1072,16 @@ td.when .sub-note{margin-top:1px}
   }
 
   /* ---------- add / edit cheque ---------- */
-  function setFormStatus(isPaid){
+  function setFormStatus(status){
     const s = $("fStatus");
-    s.innerHTML = isPaid ? "<option>Paid</option>" : "<option>Pending</option><option>Hold</option>";
-    s.disabled = !!isPaid;
+    if (status === "Paid") { s.innerHTML = "<option>Paid</option>"; s.disabled = true; }
+    else if (status === "Stop") { s.innerHTML = "<option>Pending</option><option>Hold</option><option>Stop</option>"; s.disabled = false; }
+    else { s.innerHTML = "<option>Pending</option><option>Hold</option>"; s.disabled = false; }
   }
   function resetForm(){
     editId = null;
     $("chequeForm").reset();
-    setFormStatus(false);
+    setFormStatus("");
     fillSupplierSelects();
     $("fSup").value = "";
     $("fDate").value = today();
@@ -853,7 +1152,7 @@ td.when .sub-note{margin-top:1px}
     const c = cheques.find(x => x.id === id); if (!c) return;
     editId = id;
     fillSupplierSelects(c.supplier);
-    setFormStatus(c.status === "Paid");
+    setFormStatus(c.status);
     $("fDate").value = c.date; $("fNo").value = c.number; $("fAmt").value = c.amount;
     $("fSup").value = c.supplier; $("fStatus").value = c.status;
     $("formTitle").textContent = "Edit cheque " + c.number;
@@ -900,6 +1199,7 @@ td.when .sub-note{margin-top:1px}
     return (!isNaN(x) && !isNaN(y)) ? x - y : String(a.number).localeCompare(String(b.number));
   };
   const THEAD_UNPAID = `<thead><tr><th class="chk-cell"></th><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th class="num">Paid (Rs.)</th><th class="num">Balance (Rs.)</th><th>Status</th><th></th></tr></thead>`;
+  const THEAD_STOP   = `<thead><tr><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th>Marked on</th><th>Status</th><th></th></tr></thead>`;
   const THEAD_PAID   = `<thead><tr><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th class="num">By cash (Rs.)</th><th class="num">By cheque (Rs.)</th><th>Paid on</th><th>Status</th><th></th></tr></thead>`;
 
   const statusSelect = c => `
@@ -945,7 +1245,24 @@ td.when .sub-note{margin-top:1px}
       </tr>`;
   }
 
-  function groupedTable(list, dir, unpaid){
+  function stopRow(c){
+    return `
+      <tr class="row-Stop">
+        <td class="mono">${esc(c.number)}</td>
+        <td class="supplier">${esc(c.supplier)}</td>
+        <td class="num mono">${money(c.amount)}</td>
+        <td class="when">${esc(fmtDT(c.updated))}</td>
+        <td>${statusSelect(c)}</td>
+        <td class="acts">
+          <button class="btn small primary" data-letter="${c.id}">Letter</button>
+          <button class="btn small" data-edit="${c.id}">Edit</button>
+          <button class="btn small danger" data-del="${c.id}">Delete</button>
+        </td>
+      </tr>`;
+  }
+
+  function groupedTable(list, dir, mode){
+    const unpaid = mode === "unpaid";
     const dates = Array.from(new Set(list.map(c => c.date))).sort();
     if (dir < 0) dates.reverse();
     const tm = tomorrow(), td = today();
@@ -959,11 +1276,11 @@ td.when .sub-note{margin-top:1px}
       const label = `<div class="in"><span>${esc(dayLabel(dt))}</span><span class="meta">${pl(items.length, "cheque")}  ·  ${meta}</span></div>`;
       const head = unpaid
         ? `<td class="chk-cell"><input type="checkbox" data-seldate="${dt}" aria-label="Select all cheques on ${dt}"></td><td colspan="7">${label}</td>`
-        : `<td colspan="8">${label}</td>`;
+        : `<td colspan="${mode === "stop" ? 6 : 8}">${label}</td>`;
       return `<tr class="date-row${cls}">${head}</tr>` +
-             items.map(c => unpaid ? unpaidRow(c, isTom) : paidRow(c)).join("");
+             items.map(c => unpaid ? unpaidRow(c, isTom) : mode === "stop" ? stopRow(c) : paidRow(c)).join("");
     }).join("");
-    return `<div class="table-wrap"><table class="wide">${unpaid ? THEAD_UNPAID : THEAD_PAID}<tbody>${body}</tbody></table></div>`;
+    return `<div class="table-wrap"><table class="wide">${unpaid ? THEAD_UNPAID : mode === "stop" ? THEAD_STOP : THEAD_PAID}<tbody>${body}</tbody></table></div>`;
   }
 
   function stat(k, v, o){
@@ -973,7 +1290,7 @@ td.when .sub-note{margin-top:1px}
 
   function renderTomorrow(){
     const tm = tomorrow();
-    const due = cheques.filter(c => c.date === tm && c.status !== "Paid").sort(numCmp);
+    const due = cheques.filter(c => c.date === tm && isOpen(c)).sort(numCmp);
     const box = $("tomorrowBox");
     if (loading) { box.className = "tomorrow none"; box.textContent = "Checking tomorrow's cheques…"; return; }
     if (!due.length) {
@@ -996,8 +1313,9 @@ td.when .sub-note{margin-top:1px}
   function render(){
     renderTomorrow();
     const list = filtered();
-    shownUnpaid = list.filter(c => c.status !== "Paid");
+    shownUnpaid = list.filter(isOpen);
     const paid = list.filter(c => c.status === "Paid");
+    const stopped = list.filter(c => c.status === "Stop");
 
     const visible = new Set(shownUnpaid.map(c => c.id));
     selected = new Set([...selected].filter(id => visible.has(id)));
@@ -1008,6 +1326,7 @@ td.when .sub-note{margin-top:1px}
       stat("Balance to pay (Rs.)", money(sum(shownUnpaid.map(balOf))), { cls:"key", sub: pl(shownUnpaid.length, "unpaid cheque") }) +
       stat("Pending balance (Rs.)", money(sum(pend.map(balOf))), { cls:"pending", sub: pl(pend.length, "cheque") }) +
       stat("Hold balance (Rs.)", money(sum(hold.map(balOf))), { cls:"hold", sub: pl(hold.length, "cheque") }) +
+      stat("Stopped at bank (Rs.)", money(sum(stopped.map(c => c.amount))), { cls:"stop", sub: pl(stopped.length, "cheque") }) +
       stat("Total amount (Rs.)", money(sum(list.map(c => c.amount))), { sub: pl(list.length, "cheque") + " shown" }) +
       stat("Paid by cash (Rs.)", money(sum(list.map(c => c.cash))), { cls:"paid" }) +
       stat("Paid by cheque (Rs.)", money(sum(list.map(c => c.chq))), { cls:"paid" });
@@ -1016,18 +1335,23 @@ td.when .sub-note{margin-top:1px}
     if (loading) {
       $("unpaidBox").innerHTML = msg("Loading cheques…");
       $("paidBox").innerHTML = msg("Loading cheques…");
+      $("stopBox").innerHTML = msg("Loading cheques…");
     } else {
       $("unpaidBox").innerHTML = shownUnpaid.length
-        ? groupedTable(shownUnpaid, 1, true)
+        ? groupedTable(shownUnpaid, 1, "unpaid")
         : msg(cheques.length ? "No unpaid cheques match this filter." : "No cheques yet. Add the first one in the New Cheques tab.");
       $("paidBox").innerHTML = paid.length
-        ? groupedTable(paid, -1, false)
+        ? groupedTable(paid, -1, "paid")
         : msg("No paid cheques to show.");
+      $("stopBox").innerHTML = stopped.length
+        ? groupedTable(stopped, 1, "stop")
+        : msg("No stopped cheques. To stop a cheque choose Stop in its status, or open the Stop Letter tab.");
     }
     updateBulkBar();
     renderChequeList();
     renderSupplierTable();
     renderRecent();
+    renderStop();
     renderBadges();
   }
 
@@ -1111,11 +1435,12 @@ td.when .sub-note{margin-top:1px}
 
   /* ---------- menu badges ---------- */
   function renderBadges(){
-    const unpaid = cheques.filter(c => c.status !== "Paid").length;
+    const unpaid = cheques.filter(isOpen).length;
     const startToday = new Date(); startToday.setHours(0,0,0,0);
     const updToday = hasUpd === false ? 0 : cheques.filter(c => (Date.parse(c.updated) || 0) >= startToday.getTime()).length;
     $("nbDash").textContent = unpaid || "";
     $("nbRecent").textContent = updToday || "";
+    $("nbStop").textContent = cheques.filter(c => c.status === "Stop").length || "";
     $("nbSup").textContent = suppliers.length || "";
   }
 
@@ -1181,8 +1506,9 @@ td.when .sub-note{margin-top:1px}
 
   /* ---------- row actions (dashboard lists and New Cheques list) ---------- */
   async function rowClick(e){
-    const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]"), pay = e.target.closest("[data-pay]");
+    const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]"), pay = e.target.closest("[data-pay]"), let_ = e.target.closest("[data-letter]");
     if (pay) openPay([pay.dataset.pay], false);
+    if (let_) { stopSel.add(let_.dataset.letter); showTab("stop"); renderStop(); }
     if (ed) startEdit(ed.dataset.edit);
     if (del) {
       const c = cheques.find(x => x.id === del.dataset.del);
@@ -1214,6 +1540,12 @@ td.when .sub-note{margin-top:1px}
     const next = s.value;
 
     if (next === "Paid") { render(); openPay([c.id], false); return; }   // paying needs details
+    if (next === "Stop") {                                                // stopping needs the bank letter
+      render(); stopSel.add(c.id); showTab("stop"); renderStop();
+      toast("Cheque " + c.number + " added to the stop letter.");
+      return;
+    }
+    if (c.status === "Stop" && !confirm("Take cheque " + c.number + " off Stop and make it " + next + "?\n\nThe letter you already gave the bank is not changed.")) { render(); return; }
 
     const patch = { status: next };
     if (c.status === "Paid") {
@@ -1241,12 +1573,12 @@ td.when .sub-note{margin-top:1px}
       $("payTitle").textContent = "Mark " + list.length + " cheques as Paid";
       $("payInfo").innerHTML =
         `<div>${list.length} cheques selected</div>
-         <div>Total balance: <b>Rs. ${money(sum(list.map(balOf)))}</b></div>
+         <div>Total balance: <b>Rs. ${money(sum(list.map(dueOf)))}</b></div>
          <div class="muted">Each cheque is paid in full.</div>`;
       $("payAmtField").classList.add("hidden");
       $("payAmt").required = false;
     } else {
-      const c = list[0], bal = balOf(c);
+      const c = list[0], bal = dueOf(c);
       $("payTitle").textContent = "Pay cheque " + c.number;
       $("payInfo").innerHTML =
         `<div>${esc(c.supplier)}</div>
@@ -1268,7 +1600,7 @@ td.when .sub-note{margin-top:1px}
     const amt = parseFloat($("payAmt").value);
     $("payMsg").classList.remove("err");
     if (isNaN(amt)) { $("payMsg").textContent = ""; return; }
-    const after = r2(balOf(c) - amt);
+    const after = r2(dueOf(c) - amt);
     $("payMsg").textContent = after > 0.004
       ? "Balance after this payment: Rs. " + money(after) + ". The cheque stays in the Cheque details list."
       : "Fully paid. The cheque moves to the Paid list.";
@@ -1286,7 +1618,7 @@ td.when .sub-note{margin-top:1px}
     if (payBulk) {
       payIds.forEach(id => {
         const c = cheques.find(x => x.id === id); if (!c) return;
-        const bal = balOf(c);
+        const bal = dueOf(c);
         jobs.push({ c, patch: {
           cash_paid:   r2(c.cash + (method === "Cash" ? bal : 0)),
           cheque_paid: r2(c.chq  + (method === "Cheque" ? bal : 0)),
@@ -1295,7 +1627,7 @@ td.when .sub-note{margin-top:1px}
     } else {
       const c = cheques.find(x => x.id === payIds[0]);
       const amt = r2(parseFloat($("payAmt").value));
-      const bal = balOf(c);
+      const bal = dueOf(c);
       if (isNaN(amt) || amt <= 0 || amt > bal + 0.001) {
         $("payMsg").classList.add("err");
         $("payMsg").textContent = "Enter an amount between 0.01 and " + money(bal) + ".";
@@ -1386,7 +1718,7 @@ td.when .sub-note{margin-top:1px}
     ws2["!cols"] = [{wch:24},{wch:16},{wch:16},{wch:16}];
     const fmt = (sheet, r, c) => { const cell = sheet[XLSX.utils.encode_cell({ r, c })]; if (cell && cell.t === "n") cell.z = "#,##0.00"; };
     for (let r = 5; r <= 9; r++) fmt(ws2, r, 1);
-    for (let r = 12; r <= 14; r++) { fmt(ws2, r, 2); fmt(ws2, r, 3); }
+    for (let r = 12; r < 12 + STATUSES.length; r++) { fmt(ws2, r, 2); fmt(ws2, r, 3); }
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Cheques");
@@ -1445,6 +1777,205 @@ td.when .sub-note{margin-top:1px}
       $("fileImport").value = "";
     };
     r.readAsText(f);
+  });
+
+  /* ---------- Stop letter tab ---------- */
+  let L = Object.assign({}, LETTER_DEFAULTS);   // letter details (saved in the database)
+  let stopSel = new Set();
+  let settingsOK = null;                        // can the details be saved? (null = not known yet)
+  const LS_FIELDS = { lsBank:"bank", lsAccNo:"accNo", lsAccName:"accName", lsCompany:"company", lsAddress:"address",
+                      lsReason:"reason", lsHead1:"head1", lsHead2:"head2", lsHead3:"head3" };
+  const SHEET_PX = 793.7;   // A4 width on screen
+
+  function fillLetterInputs(){ Object.keys(LS_FIELDS).forEach(id => { $(id).value = L[LS_FIELDS[id]] || ""; }); }
+  Object.keys(LS_FIELDS).forEach(id => $(id).addEventListener("input", () => { L[LS_FIELDS[id]] = $(id).value; renderLetter(); }));
+  $("lsDate").addEventListener("input", renderLetter);
+
+  async function loadLetterSettings(){
+    const { data, error } = await sb.from("app_settings").select("value").eq("key", "stop_letter").maybeSingle();
+    const msg = $("lsMsg");
+    if (error) {
+      settingsOK = false;
+      msg.classList.add("err");
+      msg.textContent = "Details cannot be saved yet. Run supabase-all-in-one.sql in the Supabase SQL Editor, then reload.";
+    } else {
+      settingsOK = true;
+      if (data && data.value) { try { Object.assign(L, JSON.parse(data.value)); } catch(e){} }
+      fillLetterInputs();
+    }
+    $("lsDetails").open = !L.accNo;
+    renderLetter();
+  }
+
+  $("lsSave").addEventListener("click", async () => {
+    const msg = $("lsMsg");
+    msg.classList.remove("err"); msg.textContent = "Saving…";
+    $("lsSave").disabled = true;
+    const { error } = await sb.from("app_settings").upsert({ key:"stop_letter", value: JSON.stringify(L), updated_at: new Date().toISOString() });
+    $("lsSave").disabled = false;
+    if (error) {
+      msg.classList.add("err");
+      msg.textContent = "Could not save: " + error.message + " (Run supabase-all-in-one.sql in the Supabase SQL Editor.)";
+      return;
+    }
+    settingsOK = true;
+    msg.textContent = "Saved. These details are used for every letter.";
+    toast("Letter details saved.");
+  });
+
+  /* choose cheques */
+  const stopEligible = () => cheques.filter(c => c.status !== "Paid");
+  function stopVisible(){
+    const q = $("stopSearch").value.trim().toLowerCase(), sp = $("stopSup").value, t = today();
+    const key = c => c.date >= t ? 0 : 1;      // upcoming cheques first, older ones after
+    return stopEligible()
+      .filter(c => (!sp || c.supplier === sp) && (!q || c.number.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q)))
+      .sort((a,b) => key(a) - key(b) || (key(a) === 0 ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)) || numCmp(a,b));
+  }
+
+  function renderStop(){
+    const ok = new Set(stopEligible().map(c => c.id));
+    stopSel = new Set([...stopSel].filter(id => ok.has(id)));
+
+    const cur = $("stopSup").value;
+    const names = Array.from(new Set(stopEligible().map(c => c.supplier))).sort((a,b) => a.localeCompare(b));
+    $("stopSup").innerHTML = `<option value="">All suppliers</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    if (cur && names.includes(cur)) $("stopSup").value = cur;
+
+    const box = $("stopListBox");
+    if (loading) { box.innerHTML = `<div class="empty">Loading cheques…</div>`; renderLetter(); return; }
+    const list = stopVisible();
+    const LIMIT = 150, shown = list.slice(0, LIMIT);
+    $("stopCount").textContent = list.length > LIMIT
+      ? "Showing " + LIMIT + " of " + pl(list.length, "cheque") + ". Use the search to find others."
+      : pl(list.length, "cheque");
+
+    if (!list.length) {
+      box.innerHTML = `<div class="empty">${cheques.length ? "No unpaid cheque matches this search." : "No cheques yet."}</div>`;
+    } else {
+      const body = shown.map(c => `
+        <tr class="pick${stopSel.has(c.id) ? " picked" : ""}${c.status === "Stop" ? " is-stop" : ""}" data-stoprow="${c.id}">
+          <td class="chk-cell"><input type="checkbox" data-stopsel="${c.id}" ${stopSel.has(c.id) ? "checked" : ""} aria-label="Select cheque ${esc(c.number)}"></td>
+          <td class="mono">${esc(c.date)}</td>
+          <td class="mono">${esc(c.number)}</td>
+          <td class="supplier">${esc(c.supplier)}</td>
+          <td class="num mono">${money(c.amount)}</td>
+          <td><span class="badge ${c.status}">${c.status}</span></td>
+        </tr>`).join("");
+      box.innerHTML = `<div class="table-wrap"><table><thead><tr><th class="chk-cell"></th><th>Cheque date</th><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th>Status</th></tr></thead><tbody>${body}</tbody></table></div>`;
+    }
+
+    const n = shown.filter(c => stopSel.has(c.id)).length;
+    $("stopAll").checked = shown.length > 0 && n === shown.length;
+    $("stopAll").indeterminate = n > 0 && n < shown.length;
+    $("stopAll").disabled = shown.length === 0;
+    const tot = sum(cheques.filter(c => stopSel.has(c.id)).map(c => c.amount));
+    $("stopInfo").textContent = stopSel.size
+      ? pl(stopSel.size, "cheque") + " selected · Rs. " + money(tot)
+      : "Click a cheque to add it to the letter.";
+    $("stopClear").disabled = stopSel.size === 0;
+    renderLetter();
+  }
+
+  $("stopListBox").addEventListener("click", e => {
+    const tr = e.target.closest("[data-stoprow]"); if (!tr) return;
+    const id = tr.dataset.stoprow, fromBox = e.target.matches("input");
+    if (stopSel.has(id)) stopSel.delete(id); else stopSel.add(id);
+    renderStop();
+    if (fromBox) { const cb = $("stopListBox").querySelector('[data-stopsel="' + id + '"]'); if (cb) cb.focus(); }
+  });
+  $("stopAll").addEventListener("change", e => {
+    const vis = stopVisible().slice(0, 150);
+    vis.forEach(c => e.target.checked ? stopSel.add(c.id) : stopSel.delete(c.id));
+    renderStop();
+  });
+  $("stopClear").addEventListener("click", () => { stopSel.clear(); renderStop(); });
+  $("stopSup").addEventListener("change", renderStop);
+  $("stopSearch").addEventListener("input", renderStop);
+
+  /* the letters: one per payee */
+  function stopGroups(){
+    const by = new Map();
+    cheques.filter(c => stopSel.has(c.id)).forEach(c => { if (!by.has(c.supplier)) by.set(c.supplier, []); by.get(c.supplier).push(c); });
+    return [...by.entries()].sort((a,b) => a[0].localeCompare(b[0]))
+      .map(([payee, items]) => [payee, items.sort((a,b) => a.date.localeCompare(b.date) || numCmp(a,b))]);
+  }
+  const letterDate = () => $("lsDate").value || today();
+  const currentModels = () => stopGroups().map(([payee, items]) => letterModel(L, letterDate(), payee, items));
+
+  function fitSheets(){
+    const wrap = $("paperWrap"), w = wrap.clientWidth - 32;
+    if (w <= 0) return;
+    const k = Math.min(1, w / SHEET_PX);
+    wrap.querySelectorAll(".sheet-box").forEach(box => {
+      const sh = box.firstElementChild;
+      sh.style.transform = "scale(" + k + ")";
+      box.style.width = (SHEET_PX * k) + "px";
+      box.style.height = (sh.offsetHeight * k) + "px";
+    });
+  }
+  window.addEventListener("resize", fitSheets);
+
+  function renderLetter(){
+    const models = currentModels();
+    $("letterPreview").innerHTML = models.length
+      ? models.map(m => `<div class="sheet-box">${letterHTML(m, LOGO_SRC)}</div>`).join("")
+      : `<div class="empty">Tick the cheques you want to stop. The letter appears here.</div>`;
+    $("letterPreview").style.display = "grid"; $("letterPreview").style.gap = "16px"; $("letterPreview").style.justifyItems = "center";
+    $("lsWord").disabled = $("lsPrint").disabled = !models.length;
+    $("letterCount").textContent = models.length
+      ? pl(models.length, "letter") + " · " + pl(models.reduce((n, m) => n + m.items.length, 0), "cheque")
+      : "";
+    $("lsHint").textContent = !models.length ? ""
+      : !L.accNo ? "The account number is empty. Add it in step 2."
+      : models.length > 1 ? "One letter per supplier, each on its own page."
+      : "";
+    fitSheets();
+  }
+
+  function saveBlob(name, blob){
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  /* after a letter is made, record the Stop status in the register */
+  async function markStop(){
+    if (!$("lsMark").checked) return;
+    const todo = cheques.filter(c => stopSel.has(c.id) && c.status !== "Stop");
+    if (!todo.length) return;
+    let failed = null;
+    for (let i = 0; i < todo.length; i += 10) {
+      const part = todo.slice(i, i + 10);
+      const res = await Promise.all(part.map(c => sb.from("cheques").update({ status:"Stop" }).eq("id", c.id)));
+      const bad = res.find(r => r.error);
+      if (bad) { failed = bad.error; break; }
+      part.forEach(c => { c.status = "Stop"; touch(c); });
+    }
+    render();
+    if (failed) showError("The letter was made, but the cheques could not be marked as Stop: " + failed.message);
+    else toast(pl(todo.length, "cheque") + " marked as Stop.");
+  }
+
+  $("lsWord").addEventListener("click", async () => {
+    const models = currentModels(); if (!models.length) return;
+    const safe = x => String(x).replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "letter";
+    const name = models.length === 1
+      ? "Stop-Payment-Letter-" + safe(models[0].payee) + "-" + letterDate() + ".docx"
+      : "Stop-Payment-Letters-" + letterDate() + ".docx";
+    saveBlob(name, makeZip(docxFiles(models, b64ToBytes(LOGO_B64))));
+    await markStop();
+  });
+
+  $("lsPrint").addEventListener("click", () => {
+    const models = currentModels(); if (!models.length) return;
+    const root = $("printRoot");
+    root.innerHTML = models.map(m => letterHTML(m, LOGO_SRC)).join("");
+    document.body.classList.add("printing");
+    const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    setTimeout(async () => { window.print(); await markStop(); }, 60);
   });
 
   /* refresh "tomorrow" and the date when the day changes while the page stays open */

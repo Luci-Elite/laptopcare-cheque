@@ -162,7 +162,7 @@ tr.date-row.tomorrow-row .meta{color:var(--alert-ink);opacity:.9}
 tr.row-Hold td{background:var(--hold-row)}
 tr.row-Hold:hover td{background:color-mix(in srgb,var(--hold-bg) 55%,var(--hold-row))}
 tr.row-Paid td.mono,tr.row-Paid td.supplier{color:var(--muted)}
-tr.row-Stop td:first-child{text-decoration:line-through;color:var(--muted)}
+tr.row-Stop td.mono:not(.num){text-decoration:line-through;color:var(--muted)}
 tr.row-Stop td.supplier{color:var(--muted)}
 tr.tom td:first-child{box-shadow:inset 4px 0 0 var(--alert-bg)}
 
@@ -699,8 +699,8 @@ details.card[open] > summary::after{content:"Hide"}
   "use strict";
 
   /* ===== Supabase connection ===== */
-  const SUPABASE_URL      = "https://twaseumqutyenzkigqtk.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_o7wmsLyi2YtA7TdqXtlgFQ_8ggqVLgQ";
+  const SUPABASE_URL      = "https://xppxtdnyuyfhviqkvwvj.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable__zE_KIYKRgOmVyD1LK4Swg_PY19bdW5";
   /* =============================== */
 
   const $ = id => document.getElementById(id);
@@ -1391,7 +1391,7 @@ details.card[open] > summary::after{content:"Hide"}
     if (c.chq) parts.push("Cheque " + money(c.chq));
     return `
       <tr class="${rowCls(c.status)}${isTom ? " tom" : ""}">
-        <td class="chk-cell"><input type="checkbox" data-sel="${c.id}" ${selected.has(c.id) ? "checked" : ""} aria-label="Select cheque ${esc(c.number)}"></td>
+        <td class="chk-cell">${c.status === "Stop" ? "" : `<input type="checkbox" data-sel="${c.id}" ${selected.has(c.id) ? "checked" : ""} aria-label="Select cheque ${esc(c.number)}">`}</td>
         <td class="mono">${esc(c.number)}</td>
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
@@ -1399,7 +1399,7 @@ details.card[open] > summary::after{content:"Hide"}
         <td class="num mono bal">${money(balOf(c))}</td>
         <td>${statusSelect(c)}</td>
         <td class="acts">
-          <button class="btn small primary" data-pay="${c.id}">Pay</button>
+          ${c.status === "Stop" ? `<button class="btn small" data-letter="${c.id}">Letter</button>` : `<button class="btn small primary" data-pay="${c.id}">Pay</button>`}
           <button class="btn small" data-edit="${c.id}">Edit</button>
           <button class="btn small danger" data-del="${c.id}">Delete</button>
         </td>
@@ -1518,8 +1518,9 @@ details.card[open] > summary::after{content:"Hide"}
       $("paidBox").innerHTML = msg("Loading cheques…");
       $("stopBox").innerHTML = msg("Loading cheques…");
     } else {
-      $("unpaidBox").innerHTML = shownUnpaid.length
-        ? groupedTable(shownUnpaid, 1, "unpaid")
+      const details = list.filter(c => isOpen(c) || c.status === "Stop");   // a Stop cheque stays in this list
+      $("unpaidBox").innerHTML = details.length
+        ? groupedTable(details, 1, "unpaid")
         : msg(cheques.length ? "No unpaid cheques match this filter." : "No cheques yet. Add the first one in the New Cheques tab.");
       $("paidBox").innerHTML = paid.length
         ? groupedTable(paid, -1, "paid")

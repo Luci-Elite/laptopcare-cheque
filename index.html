@@ -125,6 +125,7 @@ input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;accent-color:
 .stat.hold{border-left-color:var(--hold)}
 .stat.paid{border-left-color:var(--paid)}
 .stat.stop{border-left-color:var(--stop)}
+.stat.cs{border-left-color:var(--sc)}
 
 /* ---------- bulk bar ---------- */
 .bulk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
@@ -216,6 +217,37 @@ dialog .field{margin-bottom:12px}
 .head-tools{display:flex;gap:8px;flex-wrap:wrap}
 td.when{white-space:nowrap}
 td.when .sub-note{margin-top:1px}
+
+/* ---------- your own status names (General tab) ---------- */
+.sc-teal{--sc:#0b6b63;--scb:#d5efeb}
+.sc-orange{--sc:#a8480a;--scb:#fde2cf}
+.sc-pink{--sc:#a1224f;--scb:#fbd9e5}
+.sc-amber{--sc:#7a5b00;--scb:#f8ecb8}
+.sc-slate{--sc:#44525a;--scb:#e0e6e9}
+.sc-indigo{--sc:#3a45a6;--scb:#e1e4fa}
+@media (prefers-color-scheme:dark){
+  .sc-teal{--sc:#7fe0d4;--scb:#12403b}
+  .sc-orange{--sc:#ffb27d;--scb:#4a2a12}
+  .sc-pink{--sc:#ff9fc2;--scb:#4d1a2f}
+  .sc-amber{--sc:#f2d46b;--scb:#40340a}
+  .sc-slate{--sc:#c3d0d6;--scb:#2c3a41}
+  .sc-indigo{--sc:#aab3ff;--scb:#262c63}
+}
+td select.cs,.badge.cs{background:var(--scb);color:var(--sc)}
+
+/* ---------- General tab ---------- */
+.subnav{display:flex;gap:8px;flex-wrap:wrap}
+.subnav-item{border:1px solid var(--line);background:var(--panel);padding:8px 16px;border-radius:99px;cursor:pointer;font-weight:500;min-height:40px}
+.subnav-item:hover{border-color:var(--accent)}
+.subnav-item.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.gen-panel{display:grid;gap:18px}
+.gen-add{display:flex;gap:8px;flex-wrap:wrap;align-items:end;max-width:640px}
+.gen-add > div{flex:1 1 200px}
+.gen-list{display:grid;gap:8px;margin-top:14px}
+.gen-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.gen-row .meta{color:var(--muted);font-size:13px}
+.gen-row .left{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.gen-row.locked{background:color-mix(in srgb,var(--bg) 55%,var(--panel))}
 
 /* ---------- stop letter tab ---------- */
 tr.pick{cursor:pointer}
@@ -329,6 +361,10 @@ details.card[open] > summary::after{content:"Hide"}
       <button class="nav-item" data-tab="suppliers" type="button">
         <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.2c2.4.2 4 2.2 4 4.8"/></svg>
         Suppliers <span class="badge-n" id="nbSup" title="Suppliers"></span>
+      </button>
+      <button class="nav-item" data-tab="general" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        General
       </button>
     </nav>
 
@@ -473,10 +509,11 @@ details.card[open] > summary::after{content:"Hide"}
         <div class="bulk">
           <label class="chk"><input type="checkbox" id="stopAll"> Select all shown</label>
           <span class="info" id="stopInfo">Click a cheque to add it to the letter.</span>
+          <button class="btn small primary" id="stopMarkNow" type="button" disabled>Mark selected as Stop</button>
           <button class="btn small" id="stopClear" type="button">Clear selection</button>
         </div>
         <div id="stopListBox"></div>
-        <p class="note">Paid cheques are not listed. One letter is made for each payee (supplier), each on its own page.</p>
+        <p class="note">Paid cheques are not listed. Press Mark selected as Stop to show the cheques as Stop on the dashboard. One letter is made for each payee (supplier), each on its own page.</p>
       </section>
 
       <details class="card" id="lsDetails">
@@ -487,7 +524,7 @@ details.card[open] > summary::after{content:"Hide"}
           <div><label for="lsAccName">Account name</label><input id="lsAccName" autocomplete="off"></div>
           <div><label for="lsCompany">Company name (From and signature)</label><input id="lsCompany" autocomplete="off"></div>
           <div class="wide"><label for="lsAddress">Company address</label><input id="lsAddress" autocomplete="off"></div>
-          <div class="wide"><label for="lsReason">Reason (the letter says "due to the ...")</label><input id="lsReason" autocomplete="off"></div>
+          <div class="wide"><label for="lsReasonSel">Reason (the letter says "due to the ...")</label><select id="lsReasonSel"></select><input id="lsReason" class="hidden" style="margin-top:8px" placeholder="Type the reason" autocomplete="off" aria-label="Reason"></div>
           <div class="wide"><label for="lsHead1">Letterhead line 1</label><input id="lsHead1" autocomplete="off"></div>
           <div class="wide"><label for="lsHead2">Letterhead line 2</label><input id="lsHead2" autocomplete="off"></div>
           <div class="wide"><label for="lsHead3">Letterhead line 3</label><input id="lsHead3" autocomplete="off"></div>
@@ -510,6 +547,56 @@ details.card[open] > summary::after{content:"Hide"}
         </div>
         <div class="paper-wrap" id="paperWrap"><div id="letterPreview"></div></div>
       </section>
+    </div>
+
+    <!-- ===== TAB: GENERAL ===== -->
+    <div class="tab hidden" data-tab="general">
+      <div class="subnav" role="group" aria-label="General settings">
+        <button type="button" class="subnav-item active" data-gen="status">Status options</button>
+        <button type="button" class="subnav-item" data-gen="reasons">Letter reasons</button>
+        <button type="button" class="subnav-item" data-gen="suppliers">Suppliers</button>
+      </div>
+
+      <div class="gen-panel" data-gen="status">
+        <section class="card">
+          <div class="card-head"><div><h2>Status options</h2><span class="count">These names appear in every Status dropdown: the dashboard rows, the Add cheque form and the filters.</span></div></div>
+          <div class="gen-list" id="genBuiltIn"></div>
+          <p class="note">The four built-in names cannot be changed because the totals and lists depend on them.</p>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>Add your own status</h2></div>
+          <form id="genStatusForm" class="gen-add">
+            <div><label for="gsName">Name</label><input id="gsName" maxlength="24" autocomplete="off" placeholder="For example: Returned" required></div>
+            <div><label for="gsColor">Colour</label><select id="gsColor"></select></div>
+            <button class="btn primary" type="submit" id="gsAdd">Add status</button>
+          </form>
+          <div class="warn" id="gsMsg" role="status"></div>
+          <div class="gen-list" id="genStatusList"></div>
+          <p class="note">A status you add works like Pending and Hold: the cheque stays in the Cheque details list and its balance is still to pay.</p>
+        </section>
+      </div>
+
+      <div class="gen-panel hidden" data-gen="reasons">
+        <section class="card">
+          <div class="card-head"><div><h2>Letter reasons</h2><span class="count">These names appear in the Reason dropdown of the Stop Letter tab (the letter says "due to the ...").</span></div></div>
+          <form id="genReasonForm" class="gen-add">
+            <div><label for="grName">New reason</label><input id="grName" maxlength="80" autocomplete="off" placeholder="For example: Cheque Replacement" required></div>
+            <button class="btn primary" type="submit" id="grAdd">Add reason</button>
+          </form>
+          <div class="warn" id="grMsg" role="status"></div>
+          <div class="gen-list" id="genReasonList"></div>
+        </section>
+      </div>
+
+      <div class="gen-panel hidden" data-gen="suppliers">
+        <section class="card">
+          <div class="card-head"><h2>Supplier names</h2></div>
+          <p class="note" style="margin-top:0">Supplier names have their own tab, where you can add, rename and delete them. The Supplier dropdown everywhere uses that list.</p>
+          <div class="row-btns" style="margin-top:12px"><button class="btn primary" type="button" id="genGoSup">Open Suppliers tab</button></div>
+        </section>
+      </div>
+
+      <div class="warn" id="genMsg" role="status"></div>
     </div>
 
     <!-- ===== TAB: SUPPLIERS ===== -->
@@ -547,6 +634,20 @@ details.card[open] > summary::after{content:"Hide"}
     <div class="row-btns" style="margin-top:10px">
       <button class="btn primary" type="submit" id="sSave">Save password</button>
       <button class="btn" type="button" id="sCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- supplier edit dialog -->
+<dialog id="dlgSupEdit">
+  <form method="dialog" id="supEditForm">
+    <h2>Edit supplier</h2>
+    <div class="field"><label for="seName">Supplier name</label><input id="seName" required autocomplete="off"></div>
+    <p class="note" id="seNote" style="margin-top:0"></p>
+    <div class="warn" id="seMsg" role="status"></div>
+    <div class="row-btns" style="margin-top:10px">
+      <button class="btn primary" type="submit" id="seSave">Save name</button>
+      <button class="btn" type="button" id="seCancel">Cancel</button>
     </div>
   </form>
 </dialog>
@@ -598,12 +699,17 @@ details.card[open] > summary::after{content:"Hide"}
   "use strict";
 
   /* ===== Supabase connection ===== */
-  const SUPABASE_URL      = "https://twaseumqutyenzkigqtk.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_o7wmsLyi2YtA7TdqXtlgFQ_8ggqVLgQ";
+  const SUPABASE_URL      = "https://xppxtdnyuyfhviqkvwvj.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable__zE_KIYKRgOmVyD1LK4Swg_PY19bdW5";
   /* =============================== */
 
   const $ = id => document.getElementById(id);
-  const STATUSES = ["Pending","Hold","Paid","Stop"];
+  const BUILT_IN = ["Pending","Hold","Paid","Stop"];
+  const COLOR_NAMES = { teal:"Teal", orange:"Orange", pink:"Pink", amber:"Amber", slate:"Grey", indigo:"Indigo" };
+  let customStatuses = [];   // [{ name, color }] added in the General tab
+  let reasons = [];          // letter reasons added in the General tab
+  let ddOK = null;           // can the General settings be saved? (null = not known yet)
+  const allStatuses = () => ["Pending","Hold"].concat(customStatuses.map(x => x.name), ["Paid","Stop"]);
   const configured = /^https:\/\/.+\.supabase\.co/.test(SUPABASE_URL) && !SUPABASE_ANON_KEY.startsWith("PASTE");
   const libReady = !!(window.supabase && window.supabase.createClient);
 
@@ -846,12 +952,12 @@ details.card[open] > summary::after{content:"Hide"}
   const paidOf = c => r2(c.cash + c.chq);
   const dueOf  = c => Math.max(0, r2(c.amount - paidOf(c)));                 // still unpaid, whatever the status
   const balOf  = c => (c.status === "Paid" || c.status === "Stop") ? 0 : dueOf(c);   // still to pay (a stopped cheque is not paid)
-  const isOpen = c => c.status === "Pending" || c.status === "Hold";
+  const isOpen = c => c.status !== "Paid" && c.status !== "Stop";      // Pending, Hold and any status you add
 
   const dbHint = m => /cash_paid|cheque_paid|paid_date/.test(m || "")
     ? m + " (Run supabase-all-in-one.sql again in the Supabase SQL Editor to add the payment columns.)"
     : /cheques_status_check/.test(m || "")
-      ? m + " (Run supabase-all-in-one.sql again in the Supabase SQL Editor so the Stop status is allowed.)" : m;
+      ? m + " (Run supabase-all-in-one.sql again in the Supabase SQL Editor so every status name is allowed.)" : m;
   function showError(msg){
     const el = $("appErr");
     el.textContent = msg ? dbHint(msg) : "";
@@ -879,7 +985,8 @@ details.card[open] > summary::after{content:"Hide"}
     cheques:   ["New Cheques", "Add a cheque, or search and update an existing one"],
     recent:    ["Recently Updated", "Cheques that were added or changed lately, newest first"],
     stop:      ["Stop Letter", "Pick the cheques to stop and the bank letter is made for you"],
-    suppliers: ["Suppliers", "Create suppliers and see all of them"]
+    suppliers: ["Suppliers", "Create suppliers and see all of them"],
+    general:   ["General", "Add the names that appear in the dropdown menus"]
   };
   const openMenu  = () => { $("side").classList.add("open"); $("scrim").classList.add("show"); };
   const closeMenu = () => { $("side").classList.remove("open"); $("scrim").classList.remove("show"); };
@@ -986,6 +1093,7 @@ details.card[open] > summary::after{content:"Hide"}
         <td class="num mono bal">${money(sum(mine.map(balOf)))}</td>
         <td class="acts">
           <button class="btn small" type="button" data-supview="${s.id}">View cheques</button>
+          <button class="btn small" type="button" data-supedit="${s.id}">Edit</button>
           <button class="btn small danger" type="button" data-supdel="${s.id}" aria-label="Delete supplier ${esc(s.name)}">Delete</button>
         </td>
       </tr>`;
@@ -1032,7 +1140,8 @@ details.card[open] > summary::after{content:"Hide"}
   });
 
   $("supTable").addEventListener("click", async e => {
-    const view = e.target.closest("[data-supview]"), del = e.target.closest("[data-supdel]");
+    const view = e.target.closest("[data-supview]"), del = e.target.closest("[data-supdel]"), edt = e.target.closest("[data-supedit]");
+    if (edt) { openSupEdit(edt.dataset.supedit); return; }
     if (view) {
       const s = suppliers.find(x => x.id === view.dataset.supview); if (!s) return;
       ["flMonth","flFrom","flTo","flSearch"].forEach(i => $(i).value = "");
@@ -1051,10 +1160,56 @@ details.card[open] > summary::after{content:"Hide"}
     }
   });
 
+  /* ---------- rename a supplier (the new name is also put on all of its cheques) ---------- */
+  let supEditId = null;
+  function openSupEdit(id){
+    const s = suppliers.find(x => x.id === id); if (!s) return;
+    supEditId = id;
+    const n = cheques.filter(c => c.supplier === s.name).length;
+    $("seName").value = s.name;
+    $("seNote").textContent = n ? pl(n, "cheque") + " of this supplier will show the new name." : "This supplier has no cheques yet.";
+    $("seMsg").textContent = ""; $("seMsg").classList.remove("err");
+    $("dlgSupEdit").showModal();
+    $("seName").select();
+  }
+  $("seCancel").addEventListener("click", () => $("dlgSupEdit").close());
+  $("supEditForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const s = suppliers.find(x => x.id === supEditId); if (!s) { $("dlgSupEdit").close(); return; }
+    const name = $("seName").value.trim().replace(/\s+/g, " ");
+    const msg = $("seMsg"); msg.classList.add("err");
+    if (!name) { msg.textContent = "Type a supplier name."; return; }
+    if (name === s.name) { $("dlgSupEdit").close(); return; }
+    if (suppliers.some(x => x.id !== s.id && x.name.toLowerCase() === name.toLowerCase())) { msg.textContent = "A supplier with this name already exists."; return; }
+
+    $("seSave").disabled = true; msg.classList.remove("err"); msg.textContent = "Saving…";
+    const old = s.name;
+    let r = await sb.from("suppliers").update({ name }).eq("id", s.id);
+    if (r.error) {
+      $("seSave").disabled = false; msg.classList.add("err");
+      msg.textContent = r.error.code === "23505" ? "A supplier with this name already exists." : "Could not save: " + r.error.message;
+      return;
+    }
+    r = await sb.from("cheques").update({ supplier: name }).eq("supplier", old);
+    if (r.error) {
+      await sb.from("suppliers").update({ name: old }).eq("id", s.id);     // put the old name back so nothing is half changed
+      $("seSave").disabled = false; msg.classList.add("err");
+      msg.textContent = "Could not update the cheques, so the name was not changed: " + r.error.message;
+      return;
+    }
+    $("seSave").disabled = false;
+    $("dlgSupEdit").close();
+    if (filt.supplier === old) { filt.supplier = ""; }
+    ["flSup","stopSup"].forEach(id => { if ($(id) && $(id).value === old) $(id).value = ""; });
+    await loadAll();
+    toast("Supplier renamed.");
+  });
+
   /* ---------- load data ---------- */
   async function loadAll(){
     loading = true; showError(""); render();
     await loadSuppliers();
+    await loadDropdowns();
     let all = [], from = 0; const step = 1000;
     while (true) {
       const { data, error } = await sb.from("cheques").select("*")
@@ -1068,15 +1223,28 @@ details.card[open] > summary::after{content:"Hide"}
     hasUpd = all.length ? ("updated_at" in all[0]) : null;
     loading = false;
     fillSupplierSelects();
+    fillStatusSelects();
     render();
   }
 
   /* ---------- add / edit cheque ---------- */
   function setFormStatus(status){
     const s = $("fStatus");
-    if (status === "Paid") { s.innerHTML = "<option>Paid</option>"; s.disabled = true; }
-    else if (status === "Stop") { s.innerHTML = "<option>Pending</option><option>Hold</option><option>Stop</option>"; s.disabled = false; }
-    else { s.innerHTML = "<option>Pending</option><option>Hold</option>"; s.disabled = false; }
+    if (status === "Paid") { s.innerHTML = "<option>Paid</option>"; s.disabled = true; return; }
+    const names = ["Pending","Hold"].concat(customStatuses.map(x => x.name));
+    if (status && status !== "Stop" && !names.includes(status)) names.push(status);   // a name that was removed later
+    if (status === "Stop") names.push("Stop");
+    s.innerHTML = names.map(n => `<option>${esc(n)}</option>`).join("");
+    s.disabled = false;
+  }
+  /* the status dropdowns that are not inside a table row */
+  function fillStatusSelects(){
+    [["flStatus","All"],["exStatus","All"]].forEach(([id]) => {
+      const el = $(id), cur = el.value;
+      el.innerHTML = `<option value="">All</option>` + allStatuses().map(n => `<option>${esc(n)}</option>`).join("");
+      if (cur && allStatuses().includes(cur)) el.value = cur;
+    });
+    if (!editId) { const cur = $("fStatus").value; setFormStatus(""); if (cur && allStatuses().includes(cur)) $("fStatus").value = cur; }
   }
   function resetForm(){
     editId = null;
@@ -1202,10 +1370,19 @@ details.card[open] > summary::after{content:"Hide"}
   const THEAD_STOP   = `<thead><tr><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th>Marked on</th><th>Status</th><th></th></tr></thead>`;
   const THEAD_PAID   = `<thead><tr><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th class="num">By cash (Rs.)</th><th class="num">By cheque (Rs.)</th><th>Paid on</th><th>Status</th><th></th></tr></thead>`;
 
-  const statusSelect = c => `
-    <select class="${c.status}" data-status="${c.id}" aria-label="Status for cheque ${esc(c.number)}">
-      ${STATUSES.map(s => `<option${c.status===s?" selected":""}>${s}</option>`).join("")}
+  /* how a status looks: the four built-in names have their own colours, your own names use the colour you chose */
+  const stClass = name => BUILT_IN.includes(name) ? name : "cs sc-" + ((customStatuses.find(x => x.name === name) || {}).color || "slate");
+  const rowCls  = name => BUILT_IN.includes(name) ? "row-" + name : "row-cs";
+  const badgeHTML = name => `<span class="badge ${stClass(name)}">${esc(name)}</span>`;
+
+  const statusSelect = c => {
+    const names = allStatuses();
+    if (!names.includes(c.status)) names.push(c.status);      // a name that was removed later
+    return `
+    <select class="${stClass(c.status)}" data-status="${c.id}" aria-label="Status for cheque ${esc(c.number)}">
+      ${names.map(n => `<option${c.status===n?" selected":""}>${esc(n)}</option>`).join("")}
     </select>`;
+  };
 
   function unpaidRow(c, isTom){
     const paid = paidOf(c);
@@ -1213,7 +1390,7 @@ details.card[open] > summary::after{content:"Hide"}
     if (c.cash) parts.push("Cash " + money(c.cash));
     if (c.chq) parts.push("Cheque " + money(c.chq));
     return `
-      <tr class="row-${c.status}${isTom ? " tom" : ""}">
+      <tr class="${rowCls(c.status)}${isTom ? " tom" : ""}">
         <td class="chk-cell"><input type="checkbox" data-sel="${c.id}" ${selected.has(c.id) ? "checked" : ""} aria-label="Select cheque ${esc(c.number)}"></td>
         <td class="mono">${esc(c.number)}</td>
         <td class="supplier">${esc(c.supplier)}</td>
@@ -1304,7 +1481,7 @@ details.card[open] > summary::after{content:"Hide"}
       <div class="sub">${esc(dayLabel(tm))}</div>
       <div class="list">${due.map(c => `
         <div class="item">
-          <span><span class="no">${esc(c.number)}</span>  ${esc(c.supplier)}${c.status === "Hold" ? '<span class="tag">HOLD</span>' : ""}</span>
+          <span><span class="no">${esc(c.number)}</span>  ${esc(c.supplier)}${c.status !== "Pending" ? '<span class="tag">' + esc(c.status.toUpperCase()) + '</span>' : ""}</span>
           <span class="amt">Rs. ${money(balOf(c))}</span>
         </div>`).join("")}
       </div>`;
@@ -1326,6 +1503,10 @@ details.card[open] > summary::after{content:"Hide"}
       stat("Balance to pay (Rs.)", money(sum(shownUnpaid.map(balOf))), { cls:"key", sub: pl(shownUnpaid.length, "unpaid cheque") }) +
       stat("Pending balance (Rs.)", money(sum(pend.map(balOf))), { cls:"pending", sub: pl(pend.length, "cheque") }) +
       stat("Hold balance (Rs.)", money(sum(hold.map(balOf))), { cls:"hold", sub: pl(hold.length, "cheque") }) +
+      customStatuses.map(cs => {
+        const mine = list.filter(c => c.status === cs.name);
+        return stat(esc(cs.name) + " balance (Rs.)", money(sum(mine.map(balOf))), { cls:"cs sc-" + cs.color, sub: pl(mine.length, "cheque") });
+      }).join("") +
       stat("Stopped at bank (Rs.)", money(sum(stopped.map(c => c.amount))), { cls:"stop", sub: pl(stopped.length, "cheque") }) +
       stat("Total amount (Rs.)", money(sum(list.map(c => c.amount))), { sub: pl(list.length, "cheque") + " shown" }) +
       stat("Paid by cash (Rs.)", money(sum(list.map(c => c.cash))), { cls:"paid" }) +
@@ -1353,6 +1534,7 @@ details.card[open] > summary::after{content:"Hide"}
     renderRecent();
     renderStop();
     renderBadges();
+    renderGeneral();
   }
 
   /* ---------- render: New Cheques tab list ---------- */
@@ -1378,7 +1560,7 @@ details.card[open] > summary::after{content:"Hide"}
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
         <td class="num mono">${money(balOf(c))}</td>
-        <td><span class="badge ${c.status}">${c.status}</span></td>
+        <td>${badgeHTML(c.status)}</td>
         <td class="acts">
           <button class="btn small" data-edit="${c.id}">Edit</button>
           <button class="btn small danger" data-del="${c.id}">Delete</button>
@@ -1422,7 +1604,7 @@ details.card[open] > summary::after{content:"Hide"}
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
         <td class="num mono">${money(paidOf(c))}</td>
-        <td><span class="badge ${c.status}">${c.status}</span></td>
+        <td>${badgeHTML(c.status)}</td>
         <td class="acts"><button class="btn small" data-edit="${c.id}">Edit</button></td>
       </tr>`;
     }).join("");
@@ -1540,9 +1722,12 @@ details.card[open] > summary::after{content:"Hide"}
     const next = s.value;
 
     if (next === "Paid") { render(); openPay([c.id], false); return; }   // paying needs details
-    if (next === "Stop") {                                                // stopping needs the bank letter
-      render(); stopSel.add(c.id); showTab("stop"); renderStop();
-      toast("Cheque " + c.number + " added to the stop letter.");
+    if (next === "Stop") {                                                // mark it Stop right here; the letter is made in the Stop Letter tab
+      if (c.status === "Paid") { alert("A paid cheque cannot be stopped. Change it to Pending first."); render(); return; }
+      const { error } = await sb.from("cheques").update({ status:"Stop" }).eq("id", c.id);
+      if (error) { showError("Could not mark as Stop: " + error.message); render(); return; }
+      c.status = "Stop"; touch(c); render();
+      toast("Cheque " + c.number + " marked Stop. Make the bank letter in the Stop Letter tab.");
       return;
     }
     if (c.status === "Stop" && !confirm("Take cheque " + c.number + " off Stop and make it " + next + "?\n\nThe letter you already gave the bank is not changed.")) { render(); return; }
@@ -1712,13 +1897,13 @@ details.card[open] > summary::after{content:"Hide"}
       ["Balance pending", totalRow[7]],
       [],
       ["Status", "Cheques", "Cheque Amount", "Balance"],
-      ...STATUSES.map(s => [s, byStatus(s).length, sum(byStatus(s).map(c => c.amount)), sum(byStatus(s).map(balOf))])
+      ...allStatuses().map(s => [s, byStatus(s).length, sum(byStatus(s).map(c => c.amount)), sum(byStatus(s).map(balOf))])
     ];
     const ws2 = XLSX.utils.aoa_to_sheet(sm);
     ws2["!cols"] = [{wch:24},{wch:16},{wch:16},{wch:16}];
     const fmt = (sheet, r, c) => { const cell = sheet[XLSX.utils.encode_cell({ r, c })]; if (cell && cell.t === "n") cell.z = "#,##0.00"; };
     for (let r = 5; r <= 9; r++) fmt(ws2, r, 1);
-    for (let r = 12; r < 12 + STATUSES.length; r++) { fmt(ws2, r, 2); fmt(ws2, r, 3); }
+    for (let r = 12; r < 12 + allStatuses().length; r++) { fmt(ws2, r, 2); fmt(ws2, r, 3); }
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Cheques");
@@ -1749,7 +1934,7 @@ details.card[open] > summary::after{content:"Hide"}
           throw new Error("bad");
         const have = new Set(cheques.map(c => normNo(c.number)));
         const fresh = data.filter(c => { const k = normNo(c.number); if (have.has(k)) return false; have.add(k); return true; }).map(c => {
-          const amount = Number(c.amount), status = STATUSES.includes(c.status) ? c.status : "Pending";
+          const amount = Number(c.amount), status = allStatuses().includes(c.status) ? c.status : "Pending";
           const cash = Number(c.cash || 0); let chq = Number(c.chq || 0);
           if (status === "Paid" && cash + chq === 0) chq = amount;
           return { date:String(c.date), number:String(c.number), amount, supplier:String(c.supplier).trim(),
@@ -1779,6 +1964,136 @@ details.card[open] > summary::after{content:"Hide"}
     r.readAsText(f);
   });
 
+  /* ---------- General tab: names for the dropdown menus ---------- */
+  async function loadDropdowns(){
+    const { data, error } = await sb.from("app_settings").select("value").eq("key", "dropdowns").maybeSingle();
+    if (error) {
+      ddOK = false;
+      customStatuses = []; reasons = [LETTER_DEFAULTS.reason];
+      $("genMsg").classList.add("err");
+      $("genMsg").textContent = "Your own names cannot be saved yet. Run supabase-all-in-one.sql in the Supabase SQL Editor, then reload.";
+    } else {
+      ddOK = true; $("genMsg").textContent = ""; $("genMsg").classList.remove("err");
+      let v = null;
+      if (data && data.value) { try { v = JSON.parse(data.value); } catch(e){} }
+      customStatuses = v && Array.isArray(v.statuses)
+        ? v.statuses.filter(x => x && typeof x.name === "string" && x.name && !BUILT_IN.includes(x.name)).map(x => ({ name:x.name, color: COLOR_NAMES[x.color] ? x.color : "slate" }))
+        : [];
+      reasons = v && Array.isArray(v.reasons) ? v.reasons.filter(x => typeof x === "string" && x.trim()) : [LETTER_DEFAULTS.reason];
+    }
+    fillStatusSelects();
+    syncReasonSelect();
+    renderGeneral();
+  }
+
+  async function saveDropdowns(){
+    const { error } = await sb.from("app_settings").upsert({ key:"dropdowns", value: JSON.stringify({ statuses: customStatuses, reasons }), updated_at: new Date().toISOString() });
+    if (error) { showError("Could not save: " + error.message + " (Run supabase-all-in-one.sql in the Supabase SQL Editor.)"); return false; }
+    return true;
+  }
+
+  function renderGeneral(){
+    $("genBuiltIn").innerHTML = BUILT_IN.map(n =>
+      `<div class="gen-row locked"><div class="left">${badgeHTML(n)}<span class="meta">built in</span></div><span class="meta">${pl(cheques.filter(c => c.status === n).length, "cheque")}</span></div>`).join("");
+
+    $("genStatusList").innerHTML = customStatuses.length
+      ? customStatuses.map((cs, i) => {
+          const n = cheques.filter(c => c.status === cs.name).length;
+          return `<div class="gen-row"><div class="left">${badgeHTML(cs.name)}<span class="meta">${pl(n, "cheque")}</span></div>
+            <button class="btn small danger" type="button" data-gsdel="${i}" aria-label="Delete status ${esc(cs.name)}">Delete</button></div>`;
+        }).join("")
+      : `<div class="empty">No statuses of your own yet. Add one above.</div>`;
+
+    $("genReasonList").innerHTML = reasons.length
+      ? reasons.map((r, i) => `<div class="gen-row"><div class="left"><b>${esc(r)}</b></div>
+          <button class="btn small danger" type="button" data-grdel="${i}" aria-label="Delete reason ${esc(r)}">Delete</button></div>`).join("")
+      : `<div class="empty">No reasons yet. Add one above.</div>`;
+
+    $("gsColor").innerHTML = Object.keys(COLOR_NAMES).map(k => `<option value="${k}">${COLOR_NAMES[k]}</option>`).join("");
+  }
+
+  document.querySelectorAll(".subnav-item[data-gen]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".subnav-item[data-gen]").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll(".gen-panel[data-gen]").forEach(p => p.classList.toggle("hidden", p.dataset.gen !== b.dataset.gen));
+  }));
+  $("genGoSup").addEventListener("click", () => showTab("suppliers"));
+
+  $("genStatusForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("gsMsg"); msg.classList.add("err");
+    const name = $("gsName").value.trim().replace(/\s+/g, " ");
+    if (ddOK === false) { msg.textContent = "Run supabase-all-in-one.sql in the Supabase SQL Editor first, then reload."; return; }
+    if (!name) { msg.textContent = "Type a name."; return; }
+    if (!/^[\p{L}\p{N}][\p{L}\p{N} \-&\/.]*$/u.test(name)) { msg.textContent = "Use letters, numbers, spaces and - & / . only."; return; }
+    if (allStatuses().some(n => n.toLowerCase() === name.toLowerCase())) { msg.textContent = "This name is already in the list."; return; }
+    if (customStatuses.length >= 12) { msg.textContent = "You can add up to 12 statuses."; return; }
+    $("gsAdd").disabled = true;
+    customStatuses.push({ name, color: $("gsColor").value });
+    const ok = await saveDropdowns();
+    $("gsAdd").disabled = false;
+    if (!ok) { customStatuses.pop(); return; }
+    $("gsName").value = ""; msg.classList.remove("err"); msg.textContent = "";
+    fillStatusSelects(); render(); toast("Status added. It is now in every Status dropdown.");
+  });
+
+  $("genStatusList").addEventListener("click", async e => {
+    const b = e.target.closest("[data-gsdel]"); if (!b) return;
+    const cs = customStatuses[Number(b.dataset.gsdel)]; if (!cs) return;
+    const n = cheques.filter(c => c.status === cs.name).length;
+    const msg = $("gsMsg"); msg.classList.add("err");
+    if (n) { msg.textContent = pl(n, "cheque") + " still use \"" + cs.name + "\". Change their status first, then delete it."; return; }
+    if (!confirm("Delete the status \"" + cs.name + "\"?")) return;
+    const keep = customStatuses.slice();
+    customStatuses = customStatuses.filter(x => x !== cs);
+    if (!(await saveDropdowns())) { customStatuses = keep; return; }
+    msg.classList.remove("err"); msg.textContent = "";
+    if ($("flStatus").value === cs.name) { $("flStatus").value = ""; filt.status = ""; }
+    fillStatusSelects(); render(); toast("Status deleted.");
+  });
+
+  $("genReasonForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("grMsg"); msg.classList.add("err");
+    const name = $("grName").value.trim().replace(/\s+/g, " ");
+    if (ddOK === false) { msg.textContent = "Run supabase-all-in-one.sql in the Supabase SQL Editor first, then reload."; return; }
+    if (!name) { msg.textContent = "Type a reason."; return; }
+    if (reasons.some(r => r.toLowerCase() === name.toLowerCase())) { msg.textContent = "This reason is already in the list."; return; }
+    $("grAdd").disabled = true;
+    reasons.push(name);
+    const ok = await saveDropdowns();
+    $("grAdd").disabled = false;
+    if (!ok) { reasons.pop(); return; }
+    $("grName").value = ""; msg.classList.remove("err"); msg.textContent = "";
+    syncReasonSelect(); renderGeneral(); toast("Reason added. It is now in the Stop Letter dropdown.");
+  });
+
+  $("genReasonList").addEventListener("click", async e => {
+    const b = e.target.closest("[data-grdel]"); if (!b) return;
+    const r = reasons[Number(b.dataset.grdel)]; if (r === undefined) return;
+    if (!confirm("Delete the reason \"" + r + "\"?")) return;
+    const keep = reasons.slice();
+    reasons = reasons.filter((_, i) => i !== Number(b.dataset.grdel));
+    if (!(await saveDropdowns())) { reasons = keep; return; }
+    syncReasonSelect(); renderGeneral(); renderLetter(); toast("Reason deleted.");
+  });
+
+  /* the Reason dropdown in the Stop Letter tab */
+  function syncReasonSelect(){
+    const sel = $("lsReasonSel"), cur = (L.reason || "").trim();
+    const opts = reasons.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join("") +
+      `<option value="__other">Other (type it)</option><option value="">No reason</option>`;
+    sel.innerHTML = opts;
+    if (!cur) { sel.value = ""; $("lsReason").classList.add("hidden"); }
+    else if (reasons.includes(cur)) { sel.value = cur; $("lsReason").classList.add("hidden"); }
+    else { sel.value = "__other"; $("lsReason").classList.remove("hidden"); }
+  }
+  $("lsReasonSel").addEventListener("change", e => {
+    const v = e.target.value;
+    if (v === "__other") { $("lsReason").classList.remove("hidden"); $("lsReason").value = L.reason || ""; $("lsReason").focus(); }
+    else { $("lsReason").classList.add("hidden"); L.reason = v; $("lsReason").value = v; }
+    renderLetter();
+  });
+
   /* ---------- Stop letter tab ---------- */
   let L = Object.assign({}, LETTER_DEFAULTS);   // letter details (saved in the database)
   let stopSel = new Set();
@@ -1787,7 +2102,7 @@ details.card[open] > summary::after{content:"Hide"}
                       lsReason:"reason", lsHead1:"head1", lsHead2:"head2", lsHead3:"head3" };
   const SHEET_PX = 793.7;   // A4 width on screen
 
-  function fillLetterInputs(){ Object.keys(LS_FIELDS).forEach(id => { $(id).value = L[LS_FIELDS[id]] || ""; }); }
+  function fillLetterInputs(){ Object.keys(LS_FIELDS).forEach(id => { $(id).value = L[LS_FIELDS[id]] || ""; }); syncReasonSelect(); }
   Object.keys(LS_FIELDS).forEach(id => $(id).addEventListener("input", () => { L[LS_FIELDS[id]] = $(id).value; renderLetter(); }));
   $("lsDate").addEventListener("input", renderLetter);
 
@@ -1860,7 +2175,7 @@ details.card[open] > summary::after{content:"Hide"}
           <td class="mono">${esc(c.number)}</td>
           <td class="supplier">${esc(c.supplier)}</td>
           <td class="num mono">${money(c.amount)}</td>
-          <td><span class="badge ${c.status}">${c.status}</span></td>
+          <td>${badgeHTML(c.status)}</td>
         </tr>`).join("");
       box.innerHTML = `<div class="table-wrap"><table><thead><tr><th class="chk-cell"></th><th>Cheque date</th><th>Cheque no.</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th>Status</th></tr></thead><tbody>${body}</tbody></table></div>`;
     }
@@ -1874,6 +2189,7 @@ details.card[open] > summary::after{content:"Hide"}
       ? pl(stopSel.size, "cheque") + " selected · Rs. " + money(tot)
       : "Click a cheque to add it to the letter.";
     $("stopClear").disabled = stopSel.size === 0;
+    $("stopMarkNow").disabled = !cheques.some(c => stopSel.has(c.id) && c.status !== "Stop");
     renderLetter();
   }
 
@@ -1941,9 +2257,7 @@ details.card[open] > summary::after{content:"Hide"}
   }
 
   /* after a letter is made, record the Stop status in the register */
-  async function markStop(){
-    if (!$("lsMark").checked) return;
-    const todo = cheques.filter(c => stopSel.has(c.id) && c.status !== "Stop");
+  async function applyStop(todo){
     if (!todo.length) return;
     let failed = null;
     for (let i = 0; i < todo.length; i += 10) {
@@ -1954,9 +2268,17 @@ details.card[open] > summary::after{content:"Hide"}
       part.forEach(c => { c.status = "Stop"; touch(c); });
     }
     render();
-    if (failed) showError("The letter was made, but the cheques could not be marked as Stop: " + failed.message);
-    else toast(pl(todo.length, "cheque") + " marked as Stop.");
+    if (failed) showError("The cheques could not be marked as Stop: " + failed.message);
+    else toast(pl(todo.length, "cheque") + " marked as Stop. They now show as Stop on the dashboard.");
   }
+  async function markStop(){
+    if (!$("lsMark").checked) return;
+    await applyStop(cheques.filter(c => stopSel.has(c.id) && c.status !== "Stop"));
+  }
+  $("stopMarkNow").addEventListener("click", async () => {
+    $("stopMarkNow").disabled = true;
+    await applyStop(cheques.filter(c => stopSel.has(c.id) && c.status !== "Stop"));
+  });
 
   $("lsWord").addEventListener("click", async () => {
     const models = currentModels(); if (!models.length) return;

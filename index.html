@@ -162,7 +162,7 @@ tr.date-row.tomorrow-row .meta{color:var(--alert-ink);opacity:.9}
 tr.row-Hold td{background:var(--hold-row)}
 tr.row-Hold:hover td{background:color-mix(in srgb,var(--hold-bg) 55%,var(--hold-row))}
 tr.row-Paid td.mono,tr.row-Paid td.supplier{color:var(--muted)}
-tr.row-Stop td.mono:not(.num){text-decoration:line-through;color:var(--muted)}
+tr.row-Stop .no{text-decoration:line-through;color:var(--muted)}
 tr.row-Stop td.supplier{color:var(--muted)}
 tr.tom td:first-child{box-shadow:inset 4px 0 0 var(--alert-bg)}
 
@@ -252,7 +252,7 @@ td select.cs,.badge.cs{background:var(--scb);color:var(--sc)}
 /* ---------- stop letter tab ---------- */
 tr.pick{cursor:pointer}
 tr.picked td{background:color-mix(in srgb,var(--accent) 13%,var(--panel))}
-tr.pick.is-stop td.mono:nth-child(3){text-decoration:line-through}
+tr.pick.is-stop .no{text-decoration:line-through}
 details.card > summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 details.card > summary::-webkit-details-marker{display:none}
 details.card > summary h2{margin:0;font-size:16px;font-weight:600}
@@ -522,6 +522,14 @@ details.card[open] > summary::after{content:"Hide"}
 
     <!-- ===== TAB: STOP LETTER ===== -->
     <div class="tab hidden" data-tab="stop">
+      <section class="card" id="rpCard">
+        <div class="card-head">
+          <div><h2>Stopped cheques and their replacement</h2><span class="count" id="rpCount"></span></div>
+          <div class="head-tools"><input id="rpSearch" placeholder="Search stopped or new cheque no." autocomplete="off" aria-label="Search stopped cheques"></div>
+        </div>
+        <div id="rpBox"></div>
+        <p class="note">Give a new cheque in place of a stopped one: press Add replacement, type the new cheque number and date. The new cheque is added to the register as Pending and both numbers are shown together.</p>
+      </section>
       <section class="card">
         <div class="card-head">
           <div><h2>1. Choose the cheques to stop</h2><span class="count" id="stopCount"></span></div>
@@ -641,12 +649,13 @@ details.card[open] > summary::after{content:"Hide"}
             <div style="grid-column:1/-1"><label for="pcWords">Amount in words (the word "Rupees" is already printed on the leaf)</label><input id="pcWords" autocomplete="off"></div>
           </div>
           <div class="row-btns" style="margin-top:12px;align-items:center">
-            <label class="chk"><input type="checkbox" id="pcCross" checked> A/C Payee Only</label>
-            <span class="count" id="pcSaveWrap">A new cheque is saved to the register (Pending) when you print it.</span>
+            <div style="min-width:220px"><label for="pcCross">Crossing</label><select id="pcCross"><option value="acpayee">Account Payee Only</option><option value="cross">Cross (two lines only)</option><option value="none">No crossing</option></select></div>
+            <span class="count" id="pcSaveWrap">Save adds the cheque to the register as Pending. Save and print does that and prints it.</span>
           </div>
           <div class="warn" id="pcMsg" role="status"></div>
           <div class="row-btns" style="margin-top:12px">
-            <button class="btn primary" type="button" id="pcPrint">Print cheque</button>
+            <button class="btn" type="button" id="pcSaveBtn">Save</button>
+            <button class="btn primary" type="button" id="pcPrint">Save and print</button>
             <button class="btn" type="button" id="pcTest">Print test on plain paper</button>
           </div>
         </section>
@@ -704,6 +713,22 @@ details.card[open] > summary::after{content:"Hide"}
     <div class="row-btns" style="margin-top:10px">
       <button class="btn primary" type="submit" id="sSave">Save password</button>
       <button class="btn" type="button" id="sCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- replacement cheque dialog -->
+<dialog id="dlgRepl">
+  <form method="dialog" id="rpForm">
+    <h2>Add replacement cheque</h2>
+    <p class="note" id="rpFor" style="margin-top:0"></p>
+    <div class="field"><label for="rpNo">New cheque number</label><input id="rpNo" required autocomplete="off" inputmode="numeric"></div>
+    <div class="field"><label for="rpDate">New cheque date</label><input id="rpDate" type="date" required></div>
+    <div class="field"><label for="rpAmt">Amount (Rs.)</label><input id="rpAmt" type="number" step="0.01" min="0" required></div>
+    <div class="warn" id="rpMsg" role="status"></div>
+    <div class="row-btns" style="margin-top:10px">
+      <button class="btn primary" type="submit" id="rpSave">Save replacement</button>
+      <button class="btn" type="button" id="rpCancel">Cancel</button>
     </div>
   </form>
 </dialog>
@@ -1045,9 +1070,22 @@ details.card[open] > summary::after{content:"Hide"}
     let chq = Number(r.cheque_paid || 0);
     if (r.status === "Paid" && cash + chq === 0) chq = amount;   // older paid cheques with no payment details
     return { id:r.id, date:r.cheque_date, number:r.cheque_number, amount, supplier:r.supplier,
-             status:r.status, cash, chq, paidDate:r.paid_date || "", updated: r.updated_at || r.created_at || "" };
+             status:r.status, cash, chq, paidDate:r.paid_date || "", updated: r.updated_at || r.created_at || "", replaces: r.replaces || "" };
   };
   const toRow = c => ({ cheque_date:c.date, cheque_number:c.number, amount:c.amount, supplier:c.supplier, status:c.status });
+  /* a stopped cheque and the cheque given instead of it */
+  const sameNo = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+  const replOf = c => cheques.find(x => x.replaces && x.supplier === c.supplier && sameNo(x.replaces, c.number)) || null;
+  const origOf = c => c.replaces ? (cheques.find(x => x.supplier === c.supplier && sameNo(x.number, c.replaces)) || null) : null;
+  const noCell = c => {
+    const r = c.status === "Stop" ? replOf(c) : null;
+    return `<span class="no">${esc(c.number)}</span>` +
+      (r ? `<span class="sub-note">Replaced by ${esc(r.number)}</span>` : "") +
+      (c.replaces ? `<span class="sub-note">Replaces stopped ${esc(c.replaces)}</span>` : "");
+  };
+  /* does a typed search match this cheque, its replacement or the cheque it replaces? */
+  const matchNo = (c, q) => c.number.toLowerCase().includes(q) || (c.replaces || "").toLowerCase().includes(q) ||
+    (c.status === "Stop" && (replOf(c) || { number:"" }).number.toLowerCase().includes(q));
 
   /* ---------- tabs and menu ---------- */
   const TABS = {
@@ -1430,7 +1468,7 @@ details.card[open] > summary::after{content:"Hide"}
       if (filt.to && c.date > filt.to) return false;
       if (filt.supplier && c.supplier !== filt.supplier) return false;
       if (filt.status && c.status !== filt.status) return false;
-      if (filt.q && !c.number.toLowerCase().includes(filt.q)) return false;
+      if (filt.q && !matchNo(c, filt.q)) return false;
       return true;
     });
   }
@@ -1466,7 +1504,7 @@ details.card[open] > summary::after{content:"Hide"}
     return `
       <tr class="${rowCls(c.status)}${isTom ? " tom" : ""}">
         <td class="chk-cell">${c.status === "Stop" ? "" : `<input type="checkbox" data-sel="${c.id}" ${selected.has(c.id) ? "checked" : ""} aria-label="Select cheque ${esc(c.number)}">`}</td>
-        <td class="mono">${esc(c.number)}</td>
+        <td class="mono">${noCell(c)}</td>
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
         <td class="num mono">${paid > 0 ? money(paid) + `<span class="sub-note">${parts.join(" · ")}</span>` : "–"}</td>
@@ -1499,7 +1537,7 @@ details.card[open] > summary::after{content:"Hide"}
   function stopRow(c){
     return `
       <tr class="row-Stop">
-        <td class="mono">${esc(c.number)}</td>
+        <td class="mono">${noCell(c)}</td>
         <td class="supplier">${esc(c.supplier)}</td>
         <td class="num mono">${money(c.amount)}</td>
         <td class="when">${esc(fmtDT(c.updated))}</td>
@@ -1708,10 +1746,10 @@ details.card[open] > summary::after{content:"Hide"}
     const q = qs.value.trim().toLowerCase();
     if (!q) { qsBox.classList.add("hidden"); qsHits = []; return; }
     qsHits = cheques
-      .filter(c => c.number.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q))
+      .filter(c => matchNo(c, q) || c.supplier.toLowerCase().includes(q))
       .sort((a,b) => b.date.localeCompare(a.date)).slice(0, 6);
     qsBox.innerHTML = qsHits.length
-      ? qsHits.map(c => `<button type="button" class="qs-item" data-qs="${c.id}"><b>${esc(c.number)}</b> · ${esc(c.supplier)}<br><span class="muted">${esc(c.date)} · Rs. ${money(c.amount)} · ${c.status}</span></button>`).join("")
+      ? qsHits.map(c => `<button type="button" class="qs-item" data-qs="${c.id}"><b>${esc(c.number)}</b> · ${esc(c.supplier)}<br><span class="muted">${esc(c.date)} · Rs. ${money(c.amount)} · ${esc(c.status)}${c.replaces ? " · replaces " + esc(c.replaces) : ""}${c.status === "Stop" && replOf(c) ? " · replaced by " + esc(replOf(c).number) : ""}</span></button>`).join("")
       : `<div class="qs-empty">No cheque found.</div>`;
     qsBox.classList.remove("hidden");
   }
@@ -2100,11 +2138,11 @@ details.card[open] > summary::after{content:"Hide"}
     const dig = String(d.dateDigits || "");
     const dates = dig.split("").map((ch, i) =>
       `<span class="d" style="left:${px(L.date.x + i * L.date.gap, dx)};top:${px(L.date.y, dy)};font-size:${L.font + 2}pt">${esc(ch)}</span>`).join("");
-    const cross = d.cross ? `
+    const cross = d.cross && d.cross !== "none" ? `
       <svg style="position:absolute;left:${px(L.cross.x, dx)};top:${px(L.cross.y, dy)};width:34mm;height:22mm;overflow:visible" viewBox="0 0 34 22" aria-hidden="true">
         <g transform="translate(1,20) rotate(-32)">
           <line x1="0" y1="0" x2="30" y2="0" stroke="#000" stroke-width=".35"/><line x1="0" y1="-4.6" x2="30" y2="-4.6" stroke="#000" stroke-width=".35"/>
-          <text x="15" y="-1.4" text-anchor="middle" font-size="3.2" font-family="Arial,Helvetica,sans-serif" font-weight="bold">A/C PAYEE ONLY</text>
+          ${d.cross === "acpayee" ? `<text x="15" y="-1.4" text-anchor="middle" font-size="3.2" font-family="Arial,Helvetica,sans-serif" font-weight="bold">A/C PAYEE ONLY</text>` : ""}
         </g>
       </svg>` : "";
     return `<div class="chq${outline ? " outline" : ""}" style="left:${L.dx}mm;top:${L.dy}mm;width:${L.w}mm;height:${L.h}mm">
@@ -2123,14 +2161,14 @@ details.card[open] > summary::after{content:"Hide"}
   }
 
   function pcData(sample){
-    if (sample) return { payee:"SAMPLE SUPPLIER (PVT) LTD", dateDigits:"15112026", words:"One Hundred Twenty-Five Thousand and Cents Fifty Only", amountText:"**125,000.50**", cross:true };
+    if (sample) return { payee:"SAMPLE SUPPLIER (PVT) LTD", dateDigits:"15112026", words:"One Hundred Twenty-Five Thousand and Cents Fifty Only", amountText:"**125,000.50**", cross:"acpayee" };
     const amt = parseFloat($("pcAmt").value), dt = $("pcDate").value;
     return {
       payee: $("pcPayee").value.trim(),
       dateDigits: /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(8,10) + dt.slice(5,7) + dt.slice(0,4) : "",
       words: $("pcWords").value.trim(),
       amountText: amt > 0 ? "**" + money(amt) + "**" : "",
-      cross: $("pcCross").checked
+      cross: $("pcCross").value
     };
   }
 
@@ -2207,7 +2245,7 @@ details.card[open] > summary::after{content:"Hide"}
     const isNew = !c;
     $("pcNo").disabled = !isNew; $("pcSaveWrap").classList.toggle("hidden", !isNew);
     if (c) { $("pcNo").value = c.number; $("pcDate").value = c.date; $("pcAmt").value = balOf(c) || c.amount; $("pcPayee").value = c.supplier; }
-    else if (fill) { /* leave what was typed */ }
+    else if (fill) { $("pcNo").value = ""; }          // "New cheque" chosen: start with an empty number
     if ($("pcSup").value && !c && !$("pcPayee").value) $("pcPayee").value = $("pcSup").value;
     pcSyncWords(true); pcPreview();
   }
@@ -2235,35 +2273,50 @@ details.card[open] > summary::after{content:"Hide"}
     pcDoPrint(pcData(true), L, true);          // dashed outline = where the cheque leaf should sit
   });
 
-  $("pcPrint").addEventListener("click", async () => {
+  /* put the cheque into the register (new cheque: add it as Pending; existing: keep its date in line). Returns true if all is well. */
+  async function pcSaveToRegister(){
     const m = $("pcMsg"); m.classList.add("err");
-    const bank = $("pcBank").value, L = pcLayouts[bank], d = pcData(false);
-    const amt = parseFloat($("pcAmt").value);
+    const d = pcData(false), amt = parseFloat($("pcAmt").value);
     const picked = cheques.find(x => x.id === $("pcPick").value);
-    if (!d.payee) { m.textContent = "Type who the cheque is paid to."; return; }
-    if (!d.dateDigits) { m.textContent = "Choose the cheque date."; return; }
-    if (!(amt > 0)) { m.textContent = "Type the amount."; return; }
-    if (!d.words) { m.textContent = "The amount in words is empty."; return; }
-
-    let saved = false;
+    if (!d.payee) { m.textContent = "Type who the cheque is paid to."; return null; }
+    if (!d.dateDigits) { m.textContent = "Choose the cheque date."; return null; }
+    if (!(amt > 0)) { m.textContent = "Type the amount."; return null; }
+    if (!d.words) { m.textContent = "The amount in words is empty."; return null; }
+    let changed = false, no = $("pcNo").value.trim();
     if (!picked) {
-      const sup = $("pcSup").value, no = $("pcNo").value.trim();
-      if (!sup) { m.textContent = "Choose the supplier so the cheque can be saved to the register."; return; }
-      if (!no) { m.textContent = "Type the cheque number."; return; }
-      if (cheques.some(c => c.number.trim().toLowerCase() === no.toLowerCase())) { m.textContent = "Cheque number " + no + " already exists in the register. Pick it from the Cheque list instead."; return; }
-      $("pcPrint").disabled = true;
+      const sup = $("pcSup").value;
+      if (!sup) { m.textContent = "Choose the supplier so the cheque can be saved to the register."; return null; }
+      if (!no) { m.textContent = "Type the cheque number."; return null; }
+      if (cheques.some(c => c.number.trim().toLowerCase() === no.toLowerCase())) { m.textContent = "Cheque number " + no + " already exists in the register. Pick it from the Cheque list instead."; return null; }
       const { error } = await sb.from("cheques").insert({ cheque_date: $("pcDate").value, cheque_number: no, amount: amt, supplier: sup, status: "Pending" });
-      $("pcPrint").disabled = false;
-      if (error) { m.textContent = error.code === "23505" ? "Cheque number " + no + " already exists." : "Could not add to the register: " + error.message; return; }
-      saved = true;
-    } else if (picked && picked.date !== $("pcDate").value) {          // the date was changed here: keep the register in line
+      if (error) { m.textContent = error.code === "23505" ? "Cheque number " + no + " already exists." : "Could not add to the register: " + error.message; return null; }
+      changed = true;
+    } else if (picked.date !== $("pcDate").value) {
       const { error } = await sb.from("cheques").update({ cheque_date: $("pcDate").value }).eq("id", picked.id);
-      if (error) { m.textContent = "Could not update the date in the register: " + error.message; return; }
-      saved = true;
+      if (error) { m.textContent = "Could not update the date in the register: " + error.message; return null; }
+      changed = true;
     }
     m.classList.remove("err"); m.textContent = "";
-    pcDoPrint(d, L);
-    if (saved) { await loadAll(); pcRefresh(); toast("Printed and saved to the register."); }
+    if (changed) {
+      await loadAll(); pcRefresh();
+      const now = cheques.find(c => c.number === no);                // show the saved cheque as the picked one
+      if (now && [...$("pcPick").options].some(o => o.value === now.id)) { $("pcPick").value = now.id; pcApplyPick(); }
+    }
+    return { d, changed };
+  }
+  $("pcSaveBtn").addEventListener("click", async () => {
+    $("pcSaveBtn").disabled = $("pcPrint").disabled = true;
+    const r = await pcSaveToRegister();
+    $("pcSaveBtn").disabled = $("pcPrint").disabled = false;
+    if (r) toast(r.changed ? "Saved to the register." : "Already in the register. Nothing to change.");
+  });
+  $("pcPrint").addEventListener("click", async () => {
+    $("pcSaveBtn").disabled = $("pcPrint").disabled = true;
+    const r = await pcSaveToRegister();
+    $("pcSaveBtn").disabled = $("pcPrint").disabled = false;
+    if (!r) return;
+    pcDoPrint(r.d, pcLayouts[$("pcBank").value]);
+    if (r.changed) toast("Saved to the register and sent to the printer.");
   });
 
   /* ---------- General tab: names for the dropdown menus ---------- */
@@ -2396,6 +2449,60 @@ details.card[open] > summary::after{content:"Hide"}
     renderLetter();
   });
 
+  /* ---------- stopped cheques and their replacement (top of the Stop Letter tab) ---------- */
+  function renderReplacements(){
+    const q = $("rpSearch").value.trim().toLowerCase();
+    const list = cheques.filter(c => c.status === "Stop")
+      .filter(c => !q || matchNo(c, q) || c.supplier.toLowerCase().includes(q))
+      .sort((a,b) => (b.updated || "").localeCompare(a.updated || ""));
+    $("rpCount").textContent = pl(list.length, "stopped cheque");
+    if (!list.length) { $("rpBox").innerHTML = `<div class="empty">${q ? "No stopped cheque matches this search." : "No stopped cheques yet. Mark cheques as Stop below, or choose Stop on the dashboard."}</div>`; return; }
+    const LIMIT = 100;
+    $("rpBox").innerHTML = `<div class="table-wrap"><table><thead><tr><th>Stopped cheque no.</th><th>Date</th><th>Supplier</th><th class="num">Amount (Rs.)</th><th>New cheque no.</th><th>New date</th><th></th></tr></thead><tbody>` +
+      list.slice(0, LIMIT).map(c => {
+        const r = replOf(c);
+        return `<tr class="row-Stop"><td class="mono"><span class="no">${esc(c.number)}</span></td><td class="mono">${esc(c.date)}</td><td class="supplier">${esc(c.supplier)}</td>
+          <td class="num mono">${money(c.amount)}</td>
+          <td class="mono"><b>${r ? esc(r.number) : "–"}</b>${r ? `<span class="sub-note">${esc(r.status)}</span>` : ""}</td>
+          <td class="mono">${r ? esc(r.date) : "–"}</td>
+          <td class="acts">${r ? "" : `<button class="btn small primary" type="button" data-rpadd="${c.id}">Add replacement</button>`}</td></tr>`;
+      }).join("") + `</tbody></table></div>`;
+  }
+  $("rpSearch").addEventListener("input", renderReplacements);
+  let rpFor = null;
+  $("rpBox").addEventListener("click", e => {
+    const b = e.target.closest("[data-rpadd]"); if (!b) return;
+    const c = cheques.find(x => x.id === b.dataset.rpadd); if (!c) return;
+    rpFor = c.id;
+    $("rpFor").textContent = "Stopped cheque " + c.number + " · " + c.supplier + " · Rs. " + money(c.amount);
+    $("rpNo").value = ""; $("rpDate").value = today(); $("rpAmt").value = c.amount;
+    $("rpMsg").textContent = ""; $("rpMsg").classList.remove("err");
+    $("dlgRepl").showModal(); $("rpNo").focus();
+  });
+  $("rpCancel").addEventListener("click", () => $("dlgRepl").close());
+  $("rpForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const c = cheques.find(x => x.id === rpFor); if (!c) { $("dlgRepl").close(); return; }
+    const no = $("rpNo").value.trim(), dt = $("rpDate").value, amt = parseFloat($("rpAmt").value), m = $("rpMsg");
+    m.classList.add("err");
+    if (!no) { m.textContent = "Type the new cheque number."; return; }
+    if (!dt) { m.textContent = "Choose the new cheque date."; return; }
+    if (!(amt > 0)) { m.textContent = "Type the amount."; return; }
+    if (cheques.some(x => sameNo(x.number, no))) { m.textContent = "Cheque number " + no + " already exists. Use a different number."; return; }
+    $("rpSave").disabled = true;
+    const { error } = await sb.from("cheques").insert({ cheque_date: dt, cheque_number: no, amount: amt, supplier: c.supplier, status: "Pending", replaces: c.number });
+    $("rpSave").disabled = false;
+    if (error) {
+      m.textContent = error.code === "23505" ? "Cheque number " + no + " already exists."
+        : /replaces/i.test(error.message) ? "Run supabase-all-in-one.sql in the Supabase SQL Editor first (it adds the replacement column), then try again."
+        : "Could not save: " + error.message;
+      return;
+    }
+    $("dlgRepl").close();
+    await loadAll();
+    toast("Replacement cheque " + no + " added for stopped cheque " + c.number + ".");
+  });
+
   /* ---------- Stop letter tab ---------- */
   let L = Object.assign({}, LETTER_DEFAULTS);   // letter details (saved in the database)
   let stopSel = new Set();
@@ -2444,10 +2551,10 @@ details.card[open] > summary::after{content:"Hide"}
   const stopEligible = () => cheques.filter(c => c.status !== "Paid");
   function stopVisible(){
     const q = $("stopSearch").value.trim().toLowerCase(), sp = $("stopSup").value, t = today();
-    const key = c => c.date >= t ? 0 : 1;      // upcoming cheques first, older ones after
+    const key = c => c.status === "Stop" ? 0 : c.date >= t ? 1 : 2;      // stopped cheques first, then upcoming, then older ones
     return stopEligible()
-      .filter(c => (!sp || c.supplier === sp) && (!q || c.number.toLowerCase().includes(q) || c.supplier.toLowerCase().includes(q)))
-      .sort((a,b) => key(a) - key(b) || (key(a) === 0 ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)) || numCmp(a,b));
+      .filter(c => (!sp || c.supplier === sp) && (!q || matchNo(c, q) || c.supplier.toLowerCase().includes(q)))
+      .sort((a,b) => key(a) - key(b) || (key(a) <= 1 ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)) || numCmp(a,b));
   }
 
   function renderStop(){
@@ -2459,6 +2566,7 @@ details.card[open] > summary::after{content:"Hide"}
     $("stopSup").innerHTML = `<option value="">All suppliers</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
     if (cur && names.includes(cur)) $("stopSup").value = cur;
 
+    renderReplacements();
     const box = $("stopListBox");
     if (loading) { box.innerHTML = `<div class="empty">Loading cheques…</div>`; renderLetter(); return; }
     const list = stopVisible();
@@ -2474,7 +2582,7 @@ details.card[open] > summary::after{content:"Hide"}
         <tr class="pick${stopSel.has(c.id) ? " picked" : ""}${c.status === "Stop" ? " is-stop" : ""}" data-stoprow="${c.id}">
           <td class="chk-cell"><input type="checkbox" data-stopsel="${c.id}" ${stopSel.has(c.id) ? "checked" : ""} aria-label="Select cheque ${esc(c.number)}"></td>
           <td class="mono">${esc(c.date)}</td>
-          <td class="mono">${esc(c.number)}</td>
+          <td class="mono">${noCell(c)}</td>
           <td class="supplier">${esc(c.supplier)}</td>
           <td class="num mono">${money(c.amount)}</td>
           <td>${badgeHTML(c.status)}</td>

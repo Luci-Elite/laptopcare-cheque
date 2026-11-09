@@ -280,9 +280,11 @@ details.card[open] > summary::after{content:"Hide"}
 .pc-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 .pc-prev{background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:14px;overflow:hidden}
 .pc-prev .scale-box{position:relative}
-.pc-prev .scale-box .chq{position:absolute;left:0;top:0;transform-origin:top left}
-.chq{position:relative;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;box-shadow:0 1px 6px rgba(0,0,0,.25);overflow:hidden}
-.chq.outline{outline:.3mm dashed #888}
+.pc-prev .scale-box .pcpage{position:absolute;left:0;top:0;transform-origin:top left}
+.pcpage{position:relative;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.25);overflow:hidden}
+#printRoot .pcpage{box-shadow:none;overflow:hidden}
+.chq{position:absolute;left:0;top:0;background:transparent;color:#000;font-family:Arial,Helvetica,sans-serif}
+.chq.outline{outline:.3mm dashed #999}
 .chq .t{position:absolute;white-space:nowrap;line-height:1}
 .chq .d{position:absolute;line-height:1;text-align:center;width:4mm}
 .chq .wd{position:absolute;white-space:normal}
@@ -298,7 +300,6 @@ details.card[open] > summary::after{content:"Hide"}
   html,body{background:#fff !important}
   body.printing > *:not(#printRoot){display:none !important}
   body.printing #printRoot{display:block}
-  #printRoot .chq{box-shadow:none;margin:0}
   #printRoot .sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}
   #printRoot .sheet:last-child{break-after:auto;page-break-after:auto}
 }
@@ -2043,11 +2044,12 @@ details.card[open] > summary::after{content:"Hide"}
   });
 
   /* ---------- Print Cheque tab ---------- */
+  const PC_PAPER = { a4p:["A4 portrait (upright)",210,297], a4l:["A4 landscape (sideways)",297,210], chq:["Cheque size only",0,0] };
   const PC_DEFAULTS = {
     /* Commercial Bank: measured from a picture of the leaf (203 x 102 mm). Seylan starts with the same values until it is set. */
-    commercial: { name:"Commercial Bank", w:203, h:102, dx:0, dy:0, font:11,
+    commercial: { name:"Commercial Bank", w:203, h:102, dx:0, dy:0, font:11, paper:"a4p",
       date:{x:139,y:10,gap:7}, payee:{x:16,y:24,w:135}, words:{x:10,y:33.5,w:112,lh:8.8,indent:9}, amount:{x:141,y:42}, cross:{x:1,y:8} },
-    seylan:     { name:"Seylan Bank",     w:203, h:102, dx:0, dy:0, font:11,
+    seylan:     { name:"Seylan Bank",     w:203, h:102, dx:0, dy:0, font:11, paper:"a4p",
       date:{x:139,y:10,gap:7}, payee:{x:16,y:24,w:135}, words:{x:10,y:33.5,w:112,lh:8.8,indent:9}, amount:{x:141,y:42}, cross:{x:1,y:8} }
   };
   const pcClone = o => JSON.parse(JSON.stringify(o));
@@ -2064,7 +2066,7 @@ details.card[open] > summary::after{content:"Hide"}
         if (v._ver !== 2) throw 0;          // older layout (different leaf size): use the new starting values
         Object.keys(pcLayouts).forEach(k => { if (v[k] && typeof v[k] === "object") Object.keys(pcLayouts[k]).forEach(f => {
           if (typeof pcLayouts[k][f] === "object" && v[k][f]) Object.assign(pcLayouts[k][f], v[k][f]);
-          else if (typeof pcLayouts[k][f] === "number" && typeof v[k][f] === "number") pcLayouts[k][f] = v[k][f];
+          else if (typeof pcLayouts[k][f] === typeof v[k][f] && typeof v[k][f] !== "object") pcLayouts[k][f] = v[k][f];
         }); });
       } catch(e){}
     }
@@ -2098,7 +2100,7 @@ details.card[open] > summary::after{content:"Hide"}
   /* the cheque leaf: every item is placed by its x / y in millimetres */
   function chequeHTML(d, L, outline){
     const px = (v, add) => (Number(v) + (add || 0)).toFixed(2) + "mm";
-    const dx = L.dx, dy = L.dy;
+    const dx = 0, dy = 0;          // the whole leaf is moved instead (see below)
     const dig = String(d.dateDigits || "");
     const dates = dig.split("").map((ch, i) =>
       `<span class="d" style="left:${px(L.date.x + i * L.date.gap, dx)};top:${px(L.date.y, dy)};font-size:${L.font + 2}pt">${esc(ch)}</span>`).join("");
@@ -2109,12 +2111,19 @@ details.card[open] > summary::after{content:"Hide"}
           <text x="15" y="-1.4" text-anchor="middle" font-size="3.2" font-family="Arial,Helvetica,sans-serif" font-weight="bold">A/C PAYEE ONLY</text>
         </g>
       </svg>` : "";
-    return `<div class="chq${outline ? " outline" : ""}" style="width:${L.w}mm;height:${L.h}mm">
+    return `<div class="chq${outline ? " outline" : ""}" style="left:${L.dx}mm;top:${L.dy}mm;width:${L.w}mm;height:${L.h}mm">
       ${cross}${dates}
       <div class="t" style="left:${px(L.payee.x, dx)};top:${px(L.payee.y, dy)};width:${L.payee.w}mm;font-size:${L.font}pt;overflow:hidden">${d.payee ? "**" + esc(d.payee) + "**" : ""}</div>
       <div class="wd" style="left:${px(L.words.x, dx)};top:${px(L.words.y, dy)};width:${L.words.w}mm;font-size:${L.font}pt;line-height:${L.words.lh}mm;text-indent:${L.words.indent}mm">${d.words ? "**" + esc(d.words) + "**" : ""}</div>
       <div class="t" style="left:${px(L.amount.x, dx)};top:${px(L.amount.y, dy)};font-size:${L.font + 1}pt;font-weight:bold">${esc(d.amountText || "")}</div>
     </div>`;
+  }
+
+  const pcPage = L => L.paper === "chq" || !PC_PAPER[L.paper] ? [L.w, L.h] : [PC_PAPER[L.paper][1], PC_PAPER[L.paper][2]];
+  /* the sheet that goes into the printer: the cheque sits at the top-left corner, Shift right / Shift down move it */
+  function pageHTML(d, L, outline){
+    const [pw, ph] = pcPage(L);
+    return `<div class="pcpage" style="width:${pw}mm;height:${ph - 1}mm">${chequeHTML(d, L, outline)}</div>`;
   }
 
   function pcData(sample){
@@ -2132,19 +2141,22 @@ details.card[open] > summary::after{content:"Hide"}
   function pcPreview(){
     const bank = $("pcBank").value; if (!pcLayouts[bank]) return;
     const L = pcLayouts[bank], box = $("pcBox");
-    box.innerHTML = chequeHTML(pcData(false), L, true);
-    const el = box.firstElementChild, wpx = L.w * 96 / 25.4, hpx = L.h * 96 / 25.4;
-    const sc = Math.min(1, Math.max(0.3, (box.clientWidth || wpx) / wpx));
+    box.innerHTML = pageHTML(pcData(false), L, true);
+    const [pw, ph] = pcPage(L);
+    const el = box.firstElementChild, wpx = pw * 96 / 25.4, hpx = (ph - 1) * 96 / 25.4;
+    const sc = Math.min(1, 560 / wpx, Math.max(0.3, (box.clientWidth || wpx) / wpx));
     el.style.transform = "scale(" + sc + ")";
     box.style.height = (hpx * sc) + "px";
-    $("pcPrevInfo").textContent = L.name + " · " + L.w + " × " + L.h + " mm";
+    $("pcPrevInfo").textContent = L.name + " · cheque " + L.w + " × " + L.h + " mm · paper " + pw + " × " + ph + " mm";
   }
 
   function pcBuildLayoutInputs(){
     const bank = $("pcBank").value; if (!pcLayouts[bank]) return;
     const L = pcLayouts[bank];
     const inp = (id, label, val, step) => `<div><label>${label}<input type="number" step="${step || .5}" data-pc="${id}" value="${val}"></label></div>`;
-    let h = `<div class="box"><b>Whole cheque</b><div class="xy">
+    let h = `<div class="box"><b>Paper and whole cheque</b>
+      <label>Paper in the printer<select data-pcpaper>${Object.keys(PC_PAPER).map(k => `<option value="${k}"${L.paper === k ? " selected" : ""}>${PC_PAPER[k][0]}</option>`).join("")}</select></label>
+      <div class="xy" style="margin-top:6px">
       ${inp("dx","Shift right (mm)",L.dx)}${inp("dy","Shift down (mm)",L.dy)}
       ${inp("w","Leaf width",L.w)}${inp("h","Leaf height",L.h)}${inp("font","Text size (pt)",L.font,.5)}</div></div>`;
     PC_PARTS.forEach(([key, label, props]) => {
@@ -2153,6 +2165,10 @@ details.card[open] > summary::after{content:"Hide"}
     });
     $("pcLay").innerHTML = h;
   }
+  $("pcLay").addEventListener("change", e => {
+    if (!e.target.matches("[data-pcpaper]")) return;
+    pcLayouts[$("pcBank").value].paper = e.target.value; pcPreview();
+  });
   $("pcLay").addEventListener("input", e => {
     const i = e.target.closest("[data-pc]"); if (!i) return;
     const L = pcLayouts[$("pcBank").value], v = parseFloat(i.value); if (isNaN(v)) return;
@@ -2207,40 +2223,20 @@ details.card[open] > summary::after{content:"Hide"}
   ["pcPayee","pcDate","pcCross"].forEach(id => $(id).addEventListener("input", pcPreview));
   $("pcCross").addEventListener("change", pcPreview);
 
-  function pcDoPrint(d, L){
-    const root = $("printRoot");
-    root.innerHTML = chequeHTML(d, L, false);
+  function pcDoPrint(d, L, outline){
+    const root = $("printRoot"), [pw, ph] = pcPage(L);
+    root.innerHTML = pageHTML(d, L, !!outline);
     let st = $("pcPageStyle");
     if (!st) { st = document.createElement("style"); st.id = "pcPageStyle"; document.head.appendChild(st); }
-    st.textContent = "@media print{@page{size:" + L.w + "mm " + L.h + "mm;margin:0}}";
+    st.textContent = "@media print{@page{size:" + pw + "mm " + ph + "mm;margin:0}}";
     document.body.classList.add("printing");
     const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; st.textContent = ""; window.removeEventListener("afterprint", done); };
     window.addEventListener("afterprint", done);
     setTimeout(() => window.print(), 60);
   }
-  /* copy a value so it can be pasted into the Cheque Writer program */
-  document.querySelectorAll("[data-pccopy]").forEach(b => b.addEventListener("click", async () => {
-    const k = b.dataset.pccopy, dt = $("pcDate").value, amt = parseFloat($("pcAmt").value);
-    const val = k === "payee" ? $("pcPayee").value.trim()
-              : k === "amount" ? (amt > 0 ? String(amt) : "")
-              : (/^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(8,10) + "/" + dt.slice(5,7) + "/" + dt.slice(0,4) : "");
-    if (!val) { toast("Nothing to copy yet. Fill that box first."); return; }
-    try { await navigator.clipboard.writeText(val); toast("Copied: " + val); }
-    catch(e){ const t = document.createElement("textarea"); t.value = val; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); toast("Copied: " + val); } catch(_){ toast("Copy is blocked in this browser."); } t.remove(); }
-  }));
-
   $("pcTest").addEventListener("click", () => {
     const L = pcLayouts[$("pcBank").value]; if (!L) return;
-    const d = pcData(true);
-    const root = $("printRoot");
-    root.innerHTML = chequeHTML(d, L, true);          // dashed outline = the edge of the leaf
-    let st = $("pcPageStyle");
-    if (!st) { st = document.createElement("style"); st.id = "pcPageStyle"; document.head.appendChild(st); }
-    st.textContent = "@media print{@page{size:" + L.w + "mm " + L.h + "mm;margin:0}}";
-    document.body.classList.add("printing");
-    const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; st.textContent = ""; window.removeEventListener("afterprint", done); };
-    window.addEventListener("afterprint", done);
-    setTimeout(() => window.print(), 60);
+    pcDoPrint(pcData(true), L, true);          // dashed outline = where the cheque leaf should sit
   });
 
   $("pcPrint").addEventListener("click", async () => {
@@ -2614,4 +2610,4 @@ details.card[open] > summary::after{content:"Hide"}
 })();
 </script>
 </body>
-</html>
+</html>fs

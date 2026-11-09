@@ -276,12 +276,29 @@ details.card[open] > summary::after{content:"Hide"}
 .sheet li{margin:0 0 8pt}
 .sheet .gap{height:1.3em}
 .sheet .missing{color:#c62828}
+/* ---------- print cheque tab ---------- */
+.pc-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+.pc-prev{background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:14px;overflow:hidden}
+.pc-prev .scale-box{position:relative}
+.pc-prev .scale-box .chq{position:absolute;left:0;top:0;transform-origin:top left}
+.chq{position:relative;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;box-shadow:0 1px 6px rgba(0,0,0,.25);overflow:hidden}
+.chq.outline{outline:.3mm dashed #888}
+.chq .t{position:absolute;white-space:nowrap;line-height:1}
+.chq .d{position:absolute;line-height:1;text-align:center;width:4mm}
+.chq .wd{position:absolute;line-height:1.55;white-space:normal}
+.pc-lay{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px}
+.pc-lay .box{border:1px solid var(--line);border-radius:8px;padding:10px}
+.pc-lay .box b{display:block;margin-bottom:6px;font-size:13px}
+.pc-lay .xy{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pc-lay label{font-size:12px}
+.pc-lay input{padding:6px 8px;min-height:34px}
 #printRoot{display:none}
 @media print{
   @page{size:A4;margin:0}
   html,body{background:#fff !important}
   body.printing > *:not(#printRoot){display:none !important}
   body.printing #printRoot{display:block}
+  #printRoot .chq{box-shadow:none;margin:0}
   #printRoot .sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}
   #printRoot .sheet:last-child{break-after:auto;page-break-after:auto}
 }
@@ -358,6 +375,10 @@ details.card[open] > summary::after{content:"Hide"}
       </button>
 
       <div class="nav-label">Manage</div>
+      <button class="nav-item" data-tab="chqprint" type="button">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/></svg>
+        Print Cheque
+      </button>
       <button class="nav-item" data-tab="suppliers" type="button">
         <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.2c2.4.2 4 2.2 4 4.8"/></svg>
         Suppliers <span class="badge-n" id="nbSup" title="Suppliers"></span>
@@ -597,6 +618,52 @@ details.card[open] > summary::after{content:"Hide"}
       </div>
 
       <div class="warn" id="genMsg" role="status"></div>
+    </div>
+
+    <!-- ===== TAB: PRINT CHEQUE ===== -->
+    <div class="tab hidden" data-tab="chqprint">
+      <div class="pc-wrap">
+        <section class="card">
+          <div class="card-head"><div><h2>Cheque to print</h2><span class="count">Pick a cheque from the register, or type a new one. Then choose the bank and print on the real cheque leaf.</span></div></div>
+          <div class="grid">
+            <div><label for="pcBank">Bank</label><select id="pcBank"></select></div>
+            <div><label for="pcSup">Supplier</label><select id="pcSup"></select></div>
+            <div><label for="pcPick">Cheque</label><select id="pcPick"></select></div>
+            <div><label for="pcNo">Cheque number</label><input id="pcNo" autocomplete="off" inputmode="numeric"></div>
+            <div><label for="pcDate">Cheque date</label><input id="pcDate" type="date"></div>
+            <div><label for="pcAmt">Amount (Rs.)</label><input id="pcAmt" type="number" step="0.01" min="0"></div>
+          </div>
+          <div class="grid" style="margin-top:12px">
+            <div style="grid-column:1/-1"><label for="pcPayee">Pay to (printed name)</label><input id="pcPayee" autocomplete="off"></div>
+            <div style="grid-column:1/-1"><label for="pcWords">Amount in words (you can correct it)</label><input id="pcWords" autocomplete="off"></div>
+          </div>
+          <div class="row-btns" style="margin-top:12px;align-items:center">
+            <label class="chk"><input type="checkbox" id="pcCross" checked> A/C Payee Only</label>
+            <label class="chk" id="pcSaveWrap"><input type="checkbox" id="pcSave" checked> Add to the cheque register as Pending</label>
+          </div>
+          <div class="warn" id="pcMsg" role="status"></div>
+          <div class="row-btns" style="margin-top:12px">
+            <button class="btn primary" type="button" id="pcPrint">Print cheque</button>
+            <button class="btn" type="button" id="pcTest">Print test on plain paper</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div><h2>Preview</h2><span class="count" id="pcPrevInfo"></span></div></div>
+          <div class="pc-prev"><div class="scale-box" id="pcBox"></div></div>
+          <p class="note">Print a test on plain paper first, hold it against a real cheque leaf in the light, and adjust the numbers below until the text sits in the right places. Each bank is saved separately.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div><h2>Margins and positions (mm)</h2><span class="count">Measured from the top-left corner of the cheque leaf</span></div></div>
+          <div class="pc-lay" id="pcLay"></div>
+          <div class="row-btns" style="margin-top:12px">
+            <button class="btn primary" type="button" id="pcSaveLay">Save for this bank</button>
+            <button class="btn" type="button" id="pcResetLay">Reset this bank</button>
+          </div>
+          <div class="warn" id="pcLayMsg" role="status"></div>
+        </section>
+      </div>
     </div>
 
     <!-- ===== TAB: SUPPLIERS ===== -->
@@ -985,6 +1052,7 @@ details.card[open] > summary::after{content:"Hide"}
     cheques:   ["New Cheques", "Add a cheque, or search and update an existing one"],
     recent:    ["Recently Updated", "Cheques that were added or changed lately, newest first"],
     stop:      ["Stop Letter", "Pick the cheques to stop and the bank letter is made for you"],
+    chqprint:  ["Print Cheque", "Print the payee, date and amount on your bank's cheque leaf"],
     suppliers: ["Suppliers", "Create suppliers and see all of them"],
     general:   ["General", "Add the names that appear in the dropdown menus"]
   };
@@ -1005,6 +1073,7 @@ details.card[open] > summary::after{content:"Hide"}
     $("pageTitle").textContent = TABS[name][0];
     $("pageSub").textContent = name === "dashboard" ? longDate() : TABS[name][1];
     if (name === "stop") requestAnimationFrame(fitSheets);
+    if (name === "chqprint") { pcRefresh(); requestAnimationFrame(pcPreview); }
     if (location.hash !== "#" + name) { try { history.replaceState(null, "", "#" + name); } catch(e){} }
     window.scrollTo(0, 0);
   }
@@ -1210,6 +1279,7 @@ details.card[open] > summary::after{content:"Hide"}
     loading = true; showError(""); render();
     await loadSuppliers();
     await loadDropdowns();
+    loadChequeLayout();
     let all = [], from = 0; const step = 1000;
     while (true) {
       const { data, error } = await sb.from("cheques").select("*")
@@ -1224,6 +1294,7 @@ details.card[open] > summary::after{content:"Hide"}
     loading = false;
     fillSupplierSelects();
     fillStatusSelects();
+    if (typeof pcRefresh === "function") pcRefresh();
     render();
   }
 
@@ -1963,6 +2034,219 @@ details.card[open] > summary::after{content:"Hide"}
       $("fileImport").value = "";
     };
     r.readAsText(f);
+  });
+
+  /* ---------- Print Cheque tab ---------- */
+  const PC_DEFAULTS = {
+    commercial: { name:"Commercial Bank", w:203, h:89, dx:0, dy:0, font:11,
+      date:{x:150,y:11,gap:5.4}, payee:{x:28,y:27,w:118}, words:{x:28,y:37,w:122}, amount:{x:158,y:46}, cross:{x:18,y:9} },
+    seylan:     { name:"Seylan Bank",     w:203, h:89, dx:0, dy:0, font:11,
+      date:{x:148,y:10,gap:5.4}, payee:{x:26,y:28,w:120}, words:{x:26,y:38,w:124}, amount:{x:157,y:47}, cross:{x:16,y:10} }
+  };
+  const pcClone = o => JSON.parse(JSON.stringify(o));
+  let pcLayouts = pcClone(PC_DEFAULTS);
+  let pcLoaded = false;
+  const PC_PARTS = [["date","Date (DDMMYYYY boxes)",["x","y","gap"]],["payee","Pay to",["x","y","w"]],["words","Amount in words",["x","y","w"]],["amount","Amount in figures",["x","y"]],["cross","A/C Payee Only",["x","y"]]];
+
+  async function loadChequeLayout(){
+    const { data, error } = await sb.from("app_settings").select("value").eq("key", "cheque_print").maybeSingle();
+    pcLayouts = pcClone(PC_DEFAULTS);
+    if (!error && data && data.value) {
+      try {
+        const v = JSON.parse(data.value);
+        Object.keys(pcLayouts).forEach(k => { if (v[k] && typeof v[k] === "object") Object.keys(pcLayouts[k]).forEach(f => {
+          if (typeof pcLayouts[k][f] === "object" && v[k][f]) Object.assign(pcLayouts[k][f], v[k][f]);
+          else if (typeof pcLayouts[k][f] === "number" && typeof v[k][f] === "number") pcLayouts[k][f] = v[k][f];
+        }); });
+      } catch(e){}
+    }
+    pcLoaded = true;
+    pcBuildLayoutInputs(); pcPreview();
+  }
+
+  function pcWords(n){
+    const ones = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+    const tens = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+    const under1000 = x => {
+      let out = [];
+      if (x >= 100) { out.push(ones[Math.floor(x/100)] + " Hundred"); x %= 100; }
+      if (x >= 20) { out.push(tens[Math.floor(x/10)] + (x%10 ? "-" + ones[x%10] : "")); }
+      else if (x > 0) out.push(ones[x]);
+      return out.join(" ");
+    };
+    const whole = (x) => {
+      if (x === 0) return "Zero";
+      const parts = []; const units = [[1e9,"Billion"],[1e6,"Million"],[1e3,"Thousand"]];
+      units.forEach(([v,name]) => { if (x >= v) { parts.push(under1000(Math.floor(x/v)) + " " + name); x %= v; } });
+      if (x > 0) parts.push(under1000(x));
+      return parts.join(" ");
+    };
+    n = Math.round(Number(n) * 100) / 100;
+    if (!(n > 0)) return "";
+    const rupees = Math.floor(n), cents = Math.round((n - rupees) * 100);
+    return "Rupees " + whole(rupees) + (cents ? " and Cents " + whole(cents) : "") + " Only";
+  }
+
+  /* the cheque leaf: every item is placed by its x / y in millimetres */
+  function chequeHTML(d, L, outline){
+    const px = (v, add) => (Number(v) + (add || 0)).toFixed(2) + "mm";
+    const dx = L.dx, dy = L.dy;
+    const dig = String(d.dateDigits || "");
+    const dates = dig.split("").map((ch, i) =>
+      `<span class="d" style="left:${px(L.date.x + i * L.date.gap, dx)};top:${px(L.date.y, dy)};font-size:${L.font}pt">${esc(ch)}</span>`).join("");
+    const cross = d.cross ? `
+      <svg style="position:absolute;left:${px(L.cross.x, dx)};top:${px(L.cross.y, dy)};width:38mm;height:12mm;overflow:visible" viewBox="0 0 38 12" aria-hidden="true">
+        <line x1="2" y1="12" x2="9" y2="0" stroke="#000" stroke-width=".35"/><line x1="5" y1="12" x2="12" y2="0" stroke="#000" stroke-width=".35"/>
+        <text x="15" y="7.4" font-size="3.4" font-family="Arial,Helvetica,sans-serif" font-weight="bold">A/C PAYEE ONLY</text>
+      </svg>` : "";
+    return `<div class="chq${outline ? " outline" : ""}" style="width:${L.w}mm;height:${L.h}mm">
+      ${cross}${dates}
+      <div class="t" style="left:${px(L.payee.x, dx)};top:${px(L.payee.y, dy)};width:${L.payee.w}mm;font-size:${L.font}pt;overflow:hidden">${esc(d.payee || "")}</div>
+      <div class="wd" style="left:${px(L.words.x, dx)};top:${px(L.words.y, dy)};width:${L.words.w}mm;font-size:${L.font - 1}pt">${esc(d.words || "")}</div>
+      <div class="t" style="left:${px(L.amount.x, dx)};top:${px(L.amount.y, dy)};font-size:${L.font + 1}pt;font-weight:bold">${esc(d.amountText || "")}</div>
+    </div>`;
+  }
+
+  function pcData(sample){
+    if (sample) return { payee:"SAMPLE SUPPLIER (PVT) LTD", dateDigits:"15112026", words:"Rupees One Hundred Twenty-Five Thousand and Cents Fifty Only", amountText:"**125,000.50**", cross:true };
+    const amt = parseFloat($("pcAmt").value), dt = $("pcDate").value;
+    return {
+      payee: $("pcPayee").value.trim(),
+      dateDigits: /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(8,10) + dt.slice(5,7) + dt.slice(0,4) : "",
+      words: $("pcWords").value.trim(),
+      amountText: amt > 0 ? "**" + money(amt) + "**" : "",
+      cross: $("pcCross").checked
+    };
+  }
+
+  function pcPreview(){
+    const bank = $("pcBank").value; if (!pcLayouts[bank]) return;
+    const L = pcLayouts[bank], box = $("pcBox");
+    box.innerHTML = chequeHTML(pcData(false), L, true);
+    const el = box.firstElementChild, wpx = L.w * 96 / 25.4, hpx = L.h * 96 / 25.4;
+    const sc = Math.min(1, Math.max(0.3, (box.clientWidth || wpx) / wpx));
+    el.style.transform = "scale(" + sc + ")";
+    box.style.height = (hpx * sc) + "px";
+    $("pcPrevInfo").textContent = L.name + " · " + L.w + " × " + L.h + " mm";
+  }
+
+  function pcBuildLayoutInputs(){
+    const bank = $("pcBank").value; if (!pcLayouts[bank]) return;
+    const L = pcLayouts[bank];
+    const inp = (id, label, val, step) => `<div><label>${label}<input type="number" step="${step || .5}" data-pc="${id}" value="${val}"></label></div>`;
+    let h = `<div class="box"><b>Whole cheque</b><div class="xy">
+      ${inp("dx","Shift right (mm)",L.dx)}${inp("dy","Shift down (mm)",L.dy)}
+      ${inp("w","Leaf width",L.w)}${inp("h","Leaf height",L.h)}${inp("font","Text size (pt)",L.font,.5)}</div></div>`;
+    PC_PARTS.forEach(([key, label, props]) => {
+      h += `<div class="box"><b>${label}</b><div class="xy">` +
+        props.map(p => inp(key + "." + p, ({x:"From left",y:"From top",w:"Width",gap:"Box gap"})[p], L[key][p], p === "gap" ? .1 : .5)).join("") + `</div></div>`;
+    });
+    $("pcLay").innerHTML = h;
+  }
+  $("pcLay").addEventListener("input", e => {
+    const i = e.target.closest("[data-pc]"); if (!i) return;
+    const L = pcLayouts[$("pcBank").value], v = parseFloat(i.value); if (isNaN(v)) return;
+    const [a, b] = i.dataset.pc.split(".");
+    if (b) L[a][b] = v; else L[a] = v;
+    pcPreview();
+  });
+  $("pcSaveLay").addEventListener("click", async () => {
+    const m = $("pcLayMsg"); m.classList.remove("err"); m.textContent = "Saving…";
+    const { error } = await sb.from("app_settings").upsert({ key:"cheque_print", value: JSON.stringify(pcLayouts), updated_at: new Date().toISOString() });
+    if (error) { m.classList.add("err"); m.textContent = "Could not save: " + error.message + " (Run supabase-all-in-one.sql in Supabase first if you have not.)"; return; }
+    m.textContent = ""; toast("Margins saved for " + pcLayouts[$("pcBank").value].name + ".");
+  });
+  $("pcResetLay").addEventListener("click", () => {
+    const b = $("pcBank").value; if (!confirm("Put the " + PC_DEFAULTS[b].name + " positions back to the starting values?")) return;
+    pcLayouts[b] = pcClone(PC_DEFAULTS[b]); pcBuildLayoutInputs(); pcPreview();
+  });
+  $("pcBank").addEventListener("change", () => { pcBuildLayoutInputs(); pcPreview(); });
+
+  /* supplier -> cheque pick list */
+  function pcRefresh(){
+    const bs = $("pcBank");
+    if (!bs.options.length) bs.innerHTML = Object.keys(PC_DEFAULTS).map(k => `<option value="${k}">${esc(PC_DEFAULTS[k].name)}</option>`).join("");
+    const curSup = $("pcSup").value;
+    $("pcSup").innerHTML = `<option value="">Select supplier</option>` + allSupplierNames().map(n => `<option>${esc(n)}</option>`).join("");
+    if (curSup && allSupplierNames().includes(curSup)) $("pcSup").value = curSup;
+    pcFillPick();
+    if (!$("pcLay").children.length) pcBuildLayoutInputs();
+  }
+  function pcFillPick(keep){
+    const sup = $("pcSup").value, cur = keep ? $("pcPick").value : "new";
+    const mine = cheques.filter(c => c.supplier === sup && isOpen(c)).sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    $("pcPick").innerHTML = `<option value="new">New cheque (type it)</option>` +
+      mine.map(c => `<option value="${c.id}">${esc(c.number)} · ${esc(c.date)} · Rs. ${money(balOf(c))}</option>`).join("");
+    $("pcPick").value = mine.some(c => c.id === cur) ? cur : "new";
+    pcApplyPick(false);
+  }
+  function pcApplyPick(fill = true){
+    const id = $("pcPick").value, c = cheques.find(x => x.id === id);
+    const isNew = !c;
+    $("pcNo").disabled = !isNew; $("pcSaveWrap").classList.toggle("hidden", !isNew);
+    if (c) { $("pcNo").value = c.number; $("pcDate").value = c.date; $("pcAmt").value = balOf(c) || c.amount; $("pcPayee").value = c.supplier; }
+    else if (fill) { /* leave what was typed */ }
+    if ($("pcSup").value && !c && !$("pcPayee").value) $("pcPayee").value = $("pcSup").value;
+    pcSyncWords(true); pcPreview();
+  }
+  function pcSyncWords(force){ if (force || !$("pcWords").dataset.edited) { $("pcWords").value = pcWords($("pcAmt").value); delete $("pcWords").dataset.edited; } }
+  $("pcSup").addEventListener("change", () => { $("pcPayee").value = $("pcSup").value; pcFillPick(); });
+  $("pcPick").addEventListener("change", () => pcApplyPick());
+  $("pcAmt").addEventListener("input", () => { pcSyncWords(false); pcPreview(); });
+  $("pcWords").addEventListener("input", () => { $("pcWords").dataset.edited = "1"; pcPreview(); });
+  ["pcPayee","pcDate","pcCross"].forEach(id => $(id).addEventListener("input", pcPreview));
+  $("pcCross").addEventListener("change", pcPreview);
+
+  function pcDoPrint(d, L){
+    const root = $("printRoot");
+    root.innerHTML = chequeHTML(d, L, false);
+    let st = $("pcPageStyle");
+    if (!st) { st = document.createElement("style"); st.id = "pcPageStyle"; document.head.appendChild(st); }
+    st.textContent = "@media print{@page{size:" + L.w + "mm " + L.h + "mm;margin:0}}";
+    document.body.classList.add("printing");
+    const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; st.textContent = ""; window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    setTimeout(() => window.print(), 60);
+  }
+  $("pcTest").addEventListener("click", () => {
+    const L = pcLayouts[$("pcBank").value]; if (!L) return;
+    const d = pcData(true);
+    const root = $("printRoot");
+    root.innerHTML = chequeHTML(d, L, true);          // dashed outline = the edge of the leaf
+    let st = $("pcPageStyle");
+    if (!st) { st = document.createElement("style"); st.id = "pcPageStyle"; document.head.appendChild(st); }
+    st.textContent = "@media print{@page{size:" + L.w + "mm " + L.h + "mm;margin:0}}";
+    document.body.classList.add("printing");
+    const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; st.textContent = ""; window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    setTimeout(() => window.print(), 60);
+  });
+
+  $("pcPrint").addEventListener("click", async () => {
+    const m = $("pcMsg"); m.classList.add("err");
+    const bank = $("pcBank").value, L = pcLayouts[bank], d = pcData(false);
+    const amt = parseFloat($("pcAmt").value);
+    const picked = cheques.find(x => x.id === $("pcPick").value);
+    if (!d.payee) { m.textContent = "Type who the cheque is paid to."; return; }
+    if (!d.dateDigits) { m.textContent = "Choose the cheque date."; return; }
+    if (!(amt > 0)) { m.textContent = "Type the amount."; return; }
+    if (!d.words) { m.textContent = "The amount in words is empty."; return; }
+
+    let saved = false;
+    if (!picked && $("pcSave").checked) {
+      const sup = $("pcSup").value, no = $("pcNo").value.trim();
+      if (!sup) { m.textContent = "Choose the supplier so the cheque can be added to the register (or untick the box)."; return; }
+      if (!no) { m.textContent = "Type the cheque number (or untick the box)."; return; }
+      if (cheques.some(c => c.number.trim().toLowerCase() === no.toLowerCase())) { m.textContent = "Cheque number " + no + " already exists in the register. Pick it from the Cheque list instead."; return; }
+      $("pcPrint").disabled = true;
+      const { error } = await sb.from("cheques").insert({ cheque_date: $("pcDate").value, cheque_number: no, amount: amt, supplier: sup, status: "Pending" });
+      $("pcPrint").disabled = false;
+      if (error) { m.textContent = error.code === "23505" ? "Cheque number " + no + " already exists." : "Could not add to the register: " + error.message; return; }
+      saved = true;
+    }
+    m.classList.remove("err"); m.textContent = "";
+    pcDoPrint(d, L);
+    if (saved) { await loadAll(); pcRefresh(); toast("Cheque added to the register."); }
   });
 
   /* ---------- General tab: names for the dropdown menus ---------- */

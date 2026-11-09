@@ -285,7 +285,7 @@ details.card[open] > summary::after{content:"Hide"}
 .chq.outline{outline:.3mm dashed #888}
 .chq .t{position:absolute;white-space:nowrap;line-height:1}
 .chq .d{position:absolute;line-height:1;text-align:center;width:4mm}
-.chq .wd{position:absolute;line-height:1.55;white-space:normal}
+.chq .wd{position:absolute;white-space:normal}
 .pc-lay{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px}
 .pc-lay .box{border:1px solid var(--line);border-radius:8px;padding:10px}
 .pc-lay .box b{display:block;margin-bottom:6px;font-size:13px}
@@ -635,13 +635,19 @@ details.card[open] > summary::after{content:"Hide"}
           </div>
           <div class="grid" style="margin-top:12px">
             <div style="grid-column:1/-1"><label for="pcPayee">Pay to (printed name)</label><input id="pcPayee" autocomplete="off"></div>
-            <div style="grid-column:1/-1"><label for="pcWords">Amount in words (you can correct it)</label><input id="pcWords" autocomplete="off"></div>
+            <div style="grid-column:1/-1"><label for="pcWords">Amount in words (the word "Rupees" is already printed on the leaf)</label><input id="pcWords" autocomplete="off"></div>
           </div>
           <div class="row-btns" style="margin-top:12px;align-items:center">
             <label class="chk"><input type="checkbox" id="pcCross" checked> A/C Payee Only</label>
             <label class="chk" id="pcSaveWrap"><input type="checkbox" id="pcSave" checked> Add to the cheque register as Pending</label>
           </div>
           <div class="warn" id="pcMsg" role="status"></div>
+          <div class="row-btns" style="margin-top:12px;align-items:center">
+            <span class="count">For Chrysanth Cheque Writer, copy and paste:</span>
+            <button class="btn small" type="button" data-pccopy="payee">Copy payee</button>
+            <button class="btn small" type="button" data-pccopy="amount">Copy amount</button>
+            <button class="btn small" type="button" data-pccopy="date">Copy date</button>
+          </div>
           <div class="row-btns" style="margin-top:12px">
             <button class="btn primary" type="button" id="pcPrint">Print cheque</button>
             <button class="btn" type="button" id="pcTest">Print test on plain paper</button>
@@ -2038,15 +2044,16 @@ details.card[open] > summary::after{content:"Hide"}
 
   /* ---------- Print Cheque tab ---------- */
   const PC_DEFAULTS = {
-    commercial: { name:"Commercial Bank", w:203, h:89, dx:0, dy:0, font:11,
-      date:{x:150,y:11,gap:5.4}, payee:{x:28,y:27,w:118}, words:{x:28,y:37,w:122}, amount:{x:158,y:46}, cross:{x:18,y:9} },
-    seylan:     { name:"Seylan Bank",     w:203, h:89, dx:0, dy:0, font:11,
-      date:{x:148,y:10,gap:5.4}, payee:{x:26,y:28,w:120}, words:{x:26,y:38,w:124}, amount:{x:157,y:47}, cross:{x:16,y:10} }
+    /* Commercial Bank: measured from a picture of the leaf (203 x 102 mm). Seylan starts with the same values until it is set. */
+    commercial: { name:"Commercial Bank", w:203, h:102, dx:0, dy:0, font:11,
+      date:{x:139,y:10,gap:7}, payee:{x:16,y:24,w:135}, words:{x:10,y:33.5,w:112,lh:8.8,indent:9}, amount:{x:141,y:42}, cross:{x:1,y:8} },
+    seylan:     { name:"Seylan Bank",     w:203, h:102, dx:0, dy:0, font:11,
+      date:{x:139,y:10,gap:7}, payee:{x:16,y:24,w:135}, words:{x:10,y:33.5,w:112,lh:8.8,indent:9}, amount:{x:141,y:42}, cross:{x:1,y:8} }
   };
   const pcClone = o => JSON.parse(JSON.stringify(o));
   let pcLayouts = pcClone(PC_DEFAULTS);
   let pcLoaded = false;
-  const PC_PARTS = [["date","Date (DDMMYYYY boxes)",["x","y","gap"]],["payee","Pay to",["x","y","w"]],["words","Amount in words",["x","y","w"]],["amount","Amount in figures",["x","y"]],["cross","A/C Payee Only",["x","y"]]];
+  const PC_PARTS = [["date","Date (DDMMYYYY boxes)",["x","y","gap"]],["payee","Pay to",["x","y","w"]],["words","Amount in words",["x","y","w","lh","indent"]],["amount","Amount in figures",["x","y"]],["cross","A/C Payee Only",["x","y"]]];
 
   async function loadChequeLayout(){
     const { data, error } = await sb.from("app_settings").select("value").eq("key", "cheque_print").maybeSingle();
@@ -2054,6 +2061,7 @@ details.card[open] > summary::after{content:"Hide"}
     if (!error && data && data.value) {
       try {
         const v = JSON.parse(data.value);
+        if (v._ver !== 2) throw 0;          // older layout (different leaf size): use the new starting values
         Object.keys(pcLayouts).forEach(k => { if (v[k] && typeof v[k] === "object") Object.keys(pcLayouts[k]).forEach(f => {
           if (typeof pcLayouts[k][f] === "object" && v[k][f]) Object.assign(pcLayouts[k][f], v[k][f]);
           else if (typeof pcLayouts[k][f] === "number" && typeof v[k][f] === "number") pcLayouts[k][f] = v[k][f];
@@ -2084,7 +2092,7 @@ details.card[open] > summary::after{content:"Hide"}
     n = Math.round(Number(n) * 100) / 100;
     if (!(n > 0)) return "";
     const rupees = Math.floor(n), cents = Math.round((n - rupees) * 100);
-    return "Rupees " + whole(rupees) + (cents ? " and Cents " + whole(cents) : "") + " Only";
+    return whole(rupees) + (cents ? " and Cents " + whole(cents) : "") + " Only";
   }
 
   /* the cheque leaf: every item is placed by its x / y in millimetres */
@@ -2093,22 +2101,24 @@ details.card[open] > summary::after{content:"Hide"}
     const dx = L.dx, dy = L.dy;
     const dig = String(d.dateDigits || "");
     const dates = dig.split("").map((ch, i) =>
-      `<span class="d" style="left:${px(L.date.x + i * L.date.gap, dx)};top:${px(L.date.y, dy)};font-size:${L.font}pt">${esc(ch)}</span>`).join("");
+      `<span class="d" style="left:${px(L.date.x + i * L.date.gap, dx)};top:${px(L.date.y, dy)};font-size:${L.font + 2}pt">${esc(ch)}</span>`).join("");
     const cross = d.cross ? `
-      <svg style="position:absolute;left:${px(L.cross.x, dx)};top:${px(L.cross.y, dy)};width:38mm;height:12mm;overflow:visible" viewBox="0 0 38 12" aria-hidden="true">
-        <line x1="2" y1="12" x2="9" y2="0" stroke="#000" stroke-width=".35"/><line x1="5" y1="12" x2="12" y2="0" stroke="#000" stroke-width=".35"/>
-        <text x="15" y="7.4" font-size="3.4" font-family="Arial,Helvetica,sans-serif" font-weight="bold">A/C PAYEE ONLY</text>
+      <svg style="position:absolute;left:${px(L.cross.x, dx)};top:${px(L.cross.y, dy)};width:34mm;height:22mm;overflow:visible" viewBox="0 0 34 22" aria-hidden="true">
+        <g transform="translate(1,20) rotate(-32)">
+          <line x1="0" y1="0" x2="30" y2="0" stroke="#000" stroke-width=".35"/><line x1="0" y1="-4.6" x2="30" y2="-4.6" stroke="#000" stroke-width=".35"/>
+          <text x="15" y="-1.4" text-anchor="middle" font-size="3.2" font-family="Arial,Helvetica,sans-serif" font-weight="bold">A/C PAYEE ONLY</text>
+        </g>
       </svg>` : "";
     return `<div class="chq${outline ? " outline" : ""}" style="width:${L.w}mm;height:${L.h}mm">
       ${cross}${dates}
-      <div class="t" style="left:${px(L.payee.x, dx)};top:${px(L.payee.y, dy)};width:${L.payee.w}mm;font-size:${L.font}pt;overflow:hidden">${esc(d.payee || "")}</div>
-      <div class="wd" style="left:${px(L.words.x, dx)};top:${px(L.words.y, dy)};width:${L.words.w}mm;font-size:${L.font - 1}pt">${esc(d.words || "")}</div>
+      <div class="t" style="left:${px(L.payee.x, dx)};top:${px(L.payee.y, dy)};width:${L.payee.w}mm;font-size:${L.font}pt;overflow:hidden">${d.payee ? "**" + esc(d.payee) + "**" : ""}</div>
+      <div class="wd" style="left:${px(L.words.x, dx)};top:${px(L.words.y, dy)};width:${L.words.w}mm;font-size:${L.font}pt;line-height:${L.words.lh}mm;text-indent:${L.words.indent}mm">${d.words ? "**" + esc(d.words) + "**" : ""}</div>
       <div class="t" style="left:${px(L.amount.x, dx)};top:${px(L.amount.y, dy)};font-size:${L.font + 1}pt;font-weight:bold">${esc(d.amountText || "")}</div>
     </div>`;
   }
 
   function pcData(sample){
-    if (sample) return { payee:"SAMPLE SUPPLIER (PVT) LTD", dateDigits:"15112026", words:"Rupees One Hundred Twenty-Five Thousand and Cents Fifty Only", amountText:"**125,000.50**", cross:true };
+    if (sample) return { payee:"SAMPLE SUPPLIER (PVT) LTD", dateDigits:"15112026", words:"One Hundred Twenty-Five Thousand and Cents Fifty Only", amountText:"**125,000.50**", cross:true };
     const amt = parseFloat($("pcAmt").value), dt = $("pcDate").value;
     return {
       payee: $("pcPayee").value.trim(),
@@ -2139,7 +2149,7 @@ details.card[open] > summary::after{content:"Hide"}
       ${inp("w","Leaf width",L.w)}${inp("h","Leaf height",L.h)}${inp("font","Text size (pt)",L.font,.5)}</div></div>`;
     PC_PARTS.forEach(([key, label, props]) => {
       h += `<div class="box"><b>${label}</b><div class="xy">` +
-        props.map(p => inp(key + "." + p, ({x:"From left",y:"From top",w:"Width",gap:"Box gap"})[p], L[key][p], p === "gap" ? .1 : .5)).join("") + `</div></div>`;
+        props.map(p => inp(key + "." + p, ({x:"From left",y:"From top",w:"Width",gap:"Box gap",lh:"Line height",indent:"First line indent"})[p], L[key][p], p === "gap" ? .1 : .5)).join("") + `</div></div>`;
     });
     $("pcLay").innerHTML = h;
   }
@@ -2152,7 +2162,7 @@ details.card[open] > summary::after{content:"Hide"}
   });
   $("pcSaveLay").addEventListener("click", async () => {
     const m = $("pcLayMsg"); m.classList.remove("err"); m.textContent = "Saving…";
-    const { error } = await sb.from("app_settings").upsert({ key:"cheque_print", value: JSON.stringify(pcLayouts), updated_at: new Date().toISOString() });
+    const { error } = await sb.from("app_settings").upsert({ key:"cheque_print", value: JSON.stringify(Object.assign({ _ver:2 }, pcLayouts)), updated_at: new Date().toISOString() });
     if (error) { m.classList.add("err"); m.textContent = "Could not save: " + error.message + " (Run supabase-all-in-one.sql in Supabase first if you have not.)"; return; }
     m.textContent = ""; toast("Margins saved for " + pcLayouts[$("pcBank").value].name + ".");
   });
@@ -2208,6 +2218,17 @@ details.card[open] > summary::after{content:"Hide"}
     window.addEventListener("afterprint", done);
     setTimeout(() => window.print(), 60);
   }
+  /* copy a value so it can be pasted into the Cheque Writer program */
+  document.querySelectorAll("[data-pccopy]").forEach(b => b.addEventListener("click", async () => {
+    const k = b.dataset.pccopy, dt = $("pcDate").value, amt = parseFloat($("pcAmt").value);
+    const val = k === "payee" ? $("pcPayee").value.trim()
+              : k === "amount" ? (amt > 0 ? String(amt) : "")
+              : (/^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(8,10) + "/" + dt.slice(5,7) + "/" + dt.slice(0,4) : "");
+    if (!val) { toast("Nothing to copy yet. Fill that box first."); return; }
+    try { await navigator.clipboard.writeText(val); toast("Copied: " + val); }
+    catch(e){ const t = document.createElement("textarea"); t.value = val; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); toast("Copied: " + val); } catch(_){ toast("Copy is blocked in this browser."); } t.remove(); }
+  }));
+
   $("pcTest").addEventListener("click", () => {
     const L = pcLayouts[$("pcBank").value]; if (!L) return;
     const d = pcData(true);

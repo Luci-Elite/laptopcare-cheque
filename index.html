@@ -299,7 +299,9 @@ details.card[open] > summary::after{content:"Hide"}
   @page{size:A4;margin:0}
   html,body{background:#fff !important}
   body.printing > *:not(#printRoot){display:none !important}
-  body.printing #printRoot{display:block}
+  body.printing{margin:0 !important;padding:0 !important;overflow:hidden !important;height:auto !important}
+  body.printing #printRoot{display:block;position:absolute;left:0;top:0}
+  #printRoot .pcpage{break-inside:avoid;break-after:avoid;page-break-after:avoid}
   #printRoot .sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}
   #printRoot .sheet:last-child{break-after:auto;page-break-after:auto}
 }
@@ -640,15 +642,9 @@ details.card[open] > summary::after{content:"Hide"}
           </div>
           <div class="row-btns" style="margin-top:12px;align-items:center">
             <label class="chk"><input type="checkbox" id="pcCross" checked> A/C Payee Only</label>
-            <label class="chk" id="pcSaveWrap"><input type="checkbox" id="pcSave" checked> Add to the cheque register as Pending</label>
+            <span class="count" id="pcSaveWrap">A new cheque is saved to the register (Pending) when you print it.</span>
           </div>
           <div class="warn" id="pcMsg" role="status"></div>
-          <div class="row-btns" style="margin-top:12px;align-items:center">
-            <span class="count">For Chrysanth Cheque Writer, copy and paste:</span>
-            <button class="btn small" type="button" data-pccopy="payee">Copy payee</button>
-            <button class="btn small" type="button" data-pccopy="amount">Copy amount</button>
-            <button class="btn small" type="button" data-pccopy="date">Copy date</button>
-          </div>
           <div class="row-btns" style="margin-top:12px">
             <button class="btn primary" type="button" id="pcPrint">Print cheque</button>
             <button class="btn" type="button" id="pcTest">Print test on plain paper</button>
@@ -2123,7 +2119,7 @@ details.card[open] > summary::after{content:"Hide"}
   /* the sheet that goes into the printer: the cheque sits at the top-left corner, Shift right / Shift down move it */
   function pageHTML(d, L, outline){
     const [pw, ph] = pcPage(L);
-    return `<div class="pcpage" style="width:${pw}mm;height:${ph - 1}mm">${chequeHTML(d, L, outline)}</div>`;
+    return `<div class="pcpage" style="width:${pw}mm;height:${ph - 2}mm">${chequeHTML(d, L, outline)}</div>`;
   }
 
   function pcData(sample){
@@ -2143,7 +2139,7 @@ details.card[open] > summary::after{content:"Hide"}
     const L = pcLayouts[bank], box = $("pcBox");
     box.innerHTML = pageHTML(pcData(false), L, true);
     const [pw, ph] = pcPage(L);
-    const el = box.firstElementChild, wpx = pw * 96 / 25.4, hpx = (ph - 1) * 96 / 25.4;
+    const el = box.firstElementChild, wpx = pw * 96 / 25.4, hpx = (ph - 2) * 96 / 25.4;
     const sc = Math.min(1, 560 / wpx, Math.max(0.3, (box.clientWidth || wpx) / wpx));
     el.style.transform = "scale(" + sc + ")";
     box.style.height = (hpx * sc) + "px";
@@ -2228,7 +2224,7 @@ details.card[open] > summary::after{content:"Hide"}
     root.innerHTML = pageHTML(d, L, !!outline);
     let st = $("pcPageStyle");
     if (!st) { st = document.createElement("style"); st.id = "pcPageStyle"; document.head.appendChild(st); }
-    st.textContent = "@media print{@page{size:" + pw + "mm " + ph + "mm;margin:0}}";
+    st.textContent = "@page{size:" + pw + "mm " + ph + "mm;margin:0}";
     document.body.classList.add("printing");
     const done = () => { document.body.classList.remove("printing"); root.innerHTML = ""; st.textContent = ""; window.removeEventListener("afterprint", done); };
     window.addEventListener("afterprint", done);
@@ -2250,20 +2246,24 @@ details.card[open] > summary::after{content:"Hide"}
     if (!d.words) { m.textContent = "The amount in words is empty."; return; }
 
     let saved = false;
-    if (!picked && $("pcSave").checked) {
+    if (!picked) {
       const sup = $("pcSup").value, no = $("pcNo").value.trim();
-      if (!sup) { m.textContent = "Choose the supplier so the cheque can be added to the register (or untick the box)."; return; }
-      if (!no) { m.textContent = "Type the cheque number (or untick the box)."; return; }
+      if (!sup) { m.textContent = "Choose the supplier so the cheque can be saved to the register."; return; }
+      if (!no) { m.textContent = "Type the cheque number."; return; }
       if (cheques.some(c => c.number.trim().toLowerCase() === no.toLowerCase())) { m.textContent = "Cheque number " + no + " already exists in the register. Pick it from the Cheque list instead."; return; }
       $("pcPrint").disabled = true;
       const { error } = await sb.from("cheques").insert({ cheque_date: $("pcDate").value, cheque_number: no, amount: amt, supplier: sup, status: "Pending" });
       $("pcPrint").disabled = false;
       if (error) { m.textContent = error.code === "23505" ? "Cheque number " + no + " already exists." : "Could not add to the register: " + error.message; return; }
       saved = true;
+    } else if (picked && picked.date !== $("pcDate").value) {          // the date was changed here: keep the register in line
+      const { error } = await sb.from("cheques").update({ cheque_date: $("pcDate").value }).eq("id", picked.id);
+      if (error) { m.textContent = "Could not update the date in the register: " + error.message; return; }
+      saved = true;
     }
     m.classList.remove("err"); m.textContent = "";
     pcDoPrint(d, L);
-    if (saved) { await loadAll(); pcRefresh(); toast("Cheque added to the register."); }
+    if (saved) { await loadAll(); pcRefresh(); toast("Printed and saved to the register."); }
   });
 
   /* ---------- General tab: names for the dropdown menus ---------- */
@@ -2610,4 +2610,4 @@ details.card[open] > summary::after{content:"Hide"}
 })();
 </script>
 </body>
-</html>fs
+</html>

@@ -2089,7 +2089,7 @@ details.card[open] > summary::after{content:"Hide"}
   const pcClone = o => JSON.parse(JSON.stringify(o));
   let pcLayouts = pcClone(PC_DEFAULTS);
   let pcLoaded = false;
-  const PC_PARTS = [["date","Date (DDMMYYYY boxes)",["x","y","gap"]],["payee","Pay to",["x","y","w"]],["words","Amount in words",["x","y","w","lh","indent"]],["amount","Amount in figures",["x","y"]],["cross","A/C Payee Only",["x","y"]]];
+  const PC_PARTS = [["date","Date (DD MM YY, the leaf already has 20)",["x","y","gap"]],["payee","Pay to",["x","y","w"]],["words","Amount in words",["x","y","w","lh","indent"]],["amount","Amount in figures",["x","y"]],["cross","A/C Payee Only",["x","y"]]];
 
   async function loadChequeLayout(){
     const { data, error } = await sb.from("app_settings").select("value").eq("key", "cheque_print").maybeSingle();
@@ -2113,8 +2113,8 @@ details.card[open] > summary::after{content:"Hide"}
     const tens = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
     const under1000 = x => {
       let out = [];
-      if (x >= 100) { out.push(ones[Math.floor(x/100)] + " Hundred"); x %= 100; }
-      if (x >= 20) { out.push(tens[Math.floor(x/10)] + (x%10 ? "-" + ones[x%10] : "")); }
+      if (x >= 100) { out.push(ones[Math.floor(x/100)] + " Hundred"); x %= 100; if (x > 0) out.push("and"); }
+      if (x >= 20) { out.push(tens[Math.floor(x/10)] + (x%10 ? " " + ones[x%10] : "")); }
       else if (x > 0) out.push(ones[x]);
       return out.join(" ");
     };
@@ -2137,7 +2137,7 @@ details.card[open] > summary::after{content:"Hide"}
     const dx = 0, dy = 0;          // the whole leaf is moved instead (see below)
     const dig = String(d.dateDigits || "");
     const dates = dig.split("").map((ch, i) =>
-      `<span class="d" style="left:${px(L.date.x + i * L.date.gap, dx)};top:${px(L.date.y, dy)};font-size:${L.font + 2}pt">${esc(ch)}</span>`).join("");
+      `<span class="d" style="left:${px(L.date.x + (i < 4 ? i : i + 2) * L.date.gap, dx)};top:${px(L.date.y, dy)};font-size:${L.font + 2}pt">${esc(ch)}</span>`).join("");
     const cross = d.cross && d.cross !== "none" ? `
       <svg style="position:absolute;left:${px(L.cross.x, dx)};top:${px(L.cross.y, dy)};width:34mm;height:22mm;overflow:visible" viewBox="0 0 34 22" aria-hidden="true">
         <g transform="translate(1,20) rotate(-32)">
@@ -2161,11 +2161,11 @@ details.card[open] > summary::after{content:"Hide"}
   }
 
   function pcData(sample){
-    if (sample) return { payee:"SAMPLE SUPPLIER (PVT) LTD", dateDigits:"15112026", words:"One Hundred Twenty-Five Thousand and Cents Fifty Only", amountText:"**125,000.50**", cross:"acpayee" };
+    if (sample) return { payee:"SAMPLE SUPPLIER (PVT) LTD", dateDigits:"151126", words:"One Hundred and Twenty Five Thousand and Cents Fifty Only", amountText:"**125,000.50**", cross:"acpayee" };
     const amt = parseFloat($("pcAmt").value), dt = $("pcDate").value;
     return {
       payee: $("pcPayee").value.trim(),
-      dateDigits: /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(8,10) + dt.slice(5,7) + dt.slice(0,4) : "",
+      dateDigits: /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(8,10) + dt.slice(5,7) + dt.slice(2,4) : "",
       words: $("pcWords").value.trim(),
       amountText: amt > 0 ? "**" + money(amt) + "**" : "",
       cross: $("pcCross").value
@@ -2244,13 +2244,15 @@ details.card[open] > summary::after{content:"Hide"}
     const id = $("pcPick").value, c = cheques.find(x => x.id === id);
     const isNew = !c;
     $("pcNo").disabled = !isNew; $("pcSaveWrap").classList.toggle("hidden", !isNew);
-    if (c) { $("pcNo").value = c.number; $("pcDate").value = c.date; $("pcAmt").value = balOf(c) || c.amount; $("pcPayee").value = c.supplier; }
+    if (c) { $("pcNo").value = c.number; $("pcDate").value = c.date; $("pcAmt").value = balOf(c) || c.amount; if (!$("pcPayee").dataset.edited) $("pcPayee").value = c.supplier; }
     else if (fill) { $("pcNo").value = ""; }          // "New cheque" chosen: start with an empty number
     if ($("pcSup").value && !c && !$("pcPayee").value) $("pcPayee").value = $("pcSup").value;
     pcSyncWords(true); pcPreview();
   }
   function pcSyncWords(force){ if (force || !$("pcWords").dataset.edited) { $("pcWords").value = pcWords($("pcAmt").value); delete $("pcWords").dataset.edited; } }
-  $("pcSup").addEventListener("change", () => { $("pcPayee").value = $("pcSup").value; pcFillPick(); });
+  $("pcSup").addEventListener("change", () => { if (!$("pcPayee").dataset.edited) $("pcPayee").value = $("pcSup").value; pcFillPick(); });
+  /* once you type the printed name yourself (for example CASH), it is never replaced by the supplier name */
+  $("pcPayee").addEventListener("input", () => { if ($("pcPayee").value.trim()) $("pcPayee").dataset.edited = "1"; else delete $("pcPayee").dataset.edited; });
   $("pcPick").addEventListener("change", () => pcApplyPick());
   $("pcAmt").addEventListener("input", () => { pcSyncWords(false); pcPreview(); });
   $("pcWords").addEventListener("input", () => { $("pcWords").dataset.edited = "1"; pcPreview(); });
@@ -2299,8 +2301,8 @@ details.card[open] > summary::after{content:"Hide"}
     m.classList.remove("err"); m.textContent = "";
     if (changed) {
       await loadAll(); pcRefresh();
-      const now = cheques.find(c => c.number === no);                // show the saved cheque as the picked one
-      if (now && [...$("pcPick").options].some(o => o.value === now.id)) { $("pcPick").value = now.id; pcApplyPick(); }
+      $("pcPick").value = "new"; $("pcNo").disabled = false; $("pcNo").value = "";    // ready for the next cheque
+      pcPreview();
     }
     return { d, changed };
   }

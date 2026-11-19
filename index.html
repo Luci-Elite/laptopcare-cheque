@@ -276,6 +276,14 @@ details.card[open] > summary::after{content:"Hide"}
 .sheet li{margin:0 0 8pt}
 .sheet .gap{height:1.3em}
 .sheet .missing{color:#c62828}
+/* ---------- edit one letter ---------- */
+#letterEdits{display:grid;gap:12px;margin:12px 0}
+.le-card{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel)}
+.le-card h3{margin:0 0 8px;font-size:14px;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.le-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.le-grid .wide{grid-column:1/-1}
+.le-card label{font-size:12px}
+.le-card input{padding:7px 9px;min-height:36px}
 /* ---------- print cheque tab ---------- */
 .pc-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 .pc-prev{background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:14px;overflow:hidden}
@@ -577,6 +585,7 @@ details.card[open] > summary::after{content:"Hide"}
           <button class="btn primary small" id="lsWord" type="button" disabled>Download Word (.docx)</button>
           <button class="btn small" id="lsPrint" type="button" disabled>Print / Save as PDF</button>
         </div>
+        <div id="letterEdits"></div>
         <div class="paper-wrap" id="paperWrap"><div id="letterPreview"></div></div>
       </section>
     </div>
@@ -2629,7 +2638,50 @@ details.card[open] > summary::after{content:"Hide"}
       .map(([payee, items]) => [payee, items.sort((a,b) => a.date.localeCompare(b.date) || numCmp(a,b))]);
   }
   const letterDate = () => $("lsDate").value || today();
-  const currentModels = () => stopGroups().map(([payee, items]) => letterModel(L, letterDate(), payee, items));
+  /* details of one letter can be changed on its own: payee name, subject, bank, account number / name, reason.
+     An empty box means "use the Letter details from step 2". */
+  const letterOv = new Map();            // supplier -> { payee, subject, bank, accNo, accName, reason }
+  const LE_FIELDS = [["payee","Payee name in the letter",true],["subject","Subject",true],["bank","Bank",false],["accNo","Account number",false],["accName","Account name",false],["reason","Reason (the letter says \"due to the ...\")",true]];
+  let leKey = null;
+  function leDefault(supplier, f){
+    return f === "payee" ? supplier : f === "subject" ? "Subject: Notice to Stop Payment of Cheques" : (L[f] || "");
+  }
+  function renderLetterEdits(){
+    const groups = stopGroups(), key = groups.map(g => g[0]).join("\u0001"), box = $("letterEdits");
+    if (key !== leKey) {
+      leKey = key;
+      box.innerHTML = groups.map(([sup, items]) => `
+        <div class="le-card" data-le="${esc(sup)}">
+          <h3><span>Edit this letter: ${esc(sup)} <span class="muted">(${pl(items.length, "cheque")})</span></span>
+            <button class="btn small" type="button" data-lereset="${esc(sup)}">Use the step 2 details</button></h3>
+          <div class="le-grid">
+            ${LE_FIELDS.map(([f, label, wide]) => `<div${wide ? ' class="wide"' : ""}><label>${label}
+              <input data-lef="${f}" ${f === "reason" ? 'list="leReasons" ' : ""}autocomplete="off" value="${esc((letterOv.get(sup) || {})[f] || "")}"></label></div>`).join("")}
+          </div>
+        </div>`).join("") + `<datalist id="leReasons">${reasons.map(r => `<option value="${esc(r)}">`).join("")}</datalist>`;
+    }
+    box.querySelectorAll(".le-card").forEach(card => {            // the grey hint text follows the step 2 details
+      const sup = card.dataset.le;
+      card.querySelectorAll("[data-lef]").forEach(i => { i.placeholder = leDefault(sup, i.dataset.lef); });
+    });
+  }
+  $("letterEdits").addEventListener("input", e => {
+    const i = e.target.closest("[data-lef]"); if (!i) return;
+    const sup = i.closest(".le-card").dataset.le, o = letterOv.get(sup) || {};
+    o[i.dataset.lef] = i.value; letterOv.set(sup, o);
+    renderLetter();
+  });
+  $("letterEdits").addEventListener("click", e => {
+    const b = e.target.closest("[data-lereset]"); if (!b) return;
+    letterOv.delete(b.dataset.lereset); leKey = null; renderLetter();
+  });
+  const currentModels = () => stopGroups().map(([supplier, items]) => {
+    const ov = letterOv.get(supplier) || {}, st = Object.assign({}, L);
+    ["bank","accNo","accName","reason"].forEach(f => { if ((ov[f] || "").trim()) st[f] = ov[f].trim(); });
+    const m = letterModel(st, letterDate(), (ov.payee || "").trim() || supplier, items);
+    if ((ov.subject || "").trim()) m.subject = ov.subject.trim();
+    return m;
+  });
 
   function fitSheets(){
     const wrap = $("paperWrap"), w = wrap.clientWidth - 32;
@@ -2645,6 +2697,7 @@ details.card[open] > summary::after{content:"Hide"}
   window.addEventListener("resize", fitSheets);
 
   function renderLetter(){
+    renderLetterEdits();
     const models = currentModels();
     $("letterPreview").innerHTML = models.length
       ? models.map(m => `<div class="sheet-box">${letterHTML(m, LOGO_SRC)}</div>`).join("")
